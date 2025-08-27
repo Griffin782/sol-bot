@@ -1,7 +1,8 @@
 ﻿// index.ts - SOL-BOT v5.0 with Pool Integration, Wallet Rotation & Tax Management
 // MUST BE FIRST - Config Bridge Import
 import * as CFG from './configBridge';
-console.log('📊 Using Config:', { pool: CFG.TARGET_POOL, size: CFG.POSITION_SIZE });
+import { botController, getCurrentSessionInfo, getCurrentTradingParams, getActiveConfidenceLevel, shouldPauseTrading, logTradeResult } from './botController';
+console.log('📊 Using BotController:', { session: botController.getCurrentSessionIndex() + 1, params: getCurrentTradingParams() });
 import { LAMPORTS_PER_SOL, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { heliusLimiter } from './utils/rateLimiter';
 import WebSocket from "ws";
@@ -43,20 +44,24 @@ console.log("   File exists:", fs.existsSync(masterConfigPath));
 // ============================================
 // TAX & WALLET ROTATION CONFIGURATION
 // ============================================
-const TAX_RATE = CFG.TAX_RESERVE_PERCENT; // 40% for taxes
-const FEE_RATE = 0.05; // 5% for fees and gas
+// Get dynamic parameters from botController
+const tradingParams = getCurrentTradingParams();
+const sessionInfo = getCurrentSessionInfo();
+
+const TAX_RATE = sessionInfo.taxReservePercent / 100; // From botController session
+const FEE_RATE = tradingParams.slippageTolerance / 100; // From botController
 const WALLET_ROTATION_ENABLED = true;
 const WALLETS_DIR = './wallets';
 const WALLET_HISTORY_FILE = './wallets/rotation_history.json';
 
-// Hardware wallet security feature
-const HARDWARE_WALLET_THRESHOLD = 5000;  // Transfer to hardware wallet at $5,000
-const HARDWARE_WALLET_TRANSFER = 4000;   // Transfer $4,000 to hardware wallet
-const KEEP_TRADING_AMOUNT = 1000;        // Keep $1,000 for continued trading
+// Hardware wallet security feature - derived from botController
+const HARDWARE_WALLET_THRESHOLD = sessionInfo.targetPool * 0.8;  // 80% of target pool
+const HARDWARE_WALLET_TRANSFER = sessionInfo.targetPool * 0.6;   // 60% of target pool  
+const KEEP_TRADING_AMOUNT = sessionInfo.initialPool;             // Keep initial pool amount
 
-// Trade limiting with pause
-const MAX_TRADES_PER_BATCH = 25;         // Max 25 trades before pause
-const PAUSE_DURATION_MS = 60000;         // Pause for 1 minute (60,000 ms)
+// Trade limiting with pause - from botController
+const MAX_TRADES_PER_BATCH = tradingParams.pauseAfterTrades;     // From botController
+const PAUSE_DURATION_MS = 15 * 60 * 1000;                       // 15 minutes from botController fatigue management
 
 let currentBatchTrades = 0;              // Track trades in current batch
 let lastPauseTime = 0;                   // Track when last pause occurred
@@ -113,16 +118,13 @@ const POOL_SESSIONS: PoolSession[] = [
   },
 ];
 
-let currentSessionIndex = 0;
-let currentSession = POOL_SESSIONS[0];
+// Session management now handled by botController
+let currentSession: any = getCurrentSessionInfo();
 
-function getNextSession(): PoolSession {
-  // Move to next session or stay at session 4
-  if (currentSessionIndex < POOL_SESSIONS.length - 1) {
-    currentSessionIndex++;
-  }
-  // Session 4 repeats with same settings
-  return POOL_SESSIONS[currentSessionIndex];
+function getNextSession(): any {
+  // Session management now handled by botController
+  botController.advanceSession();
+  return getCurrentSessionInfo();
 }
 
 function calculateGrossTarget(netTarget: number, initialPool: number, reinvestmentRate: number): number {
@@ -210,7 +212,7 @@ const WALLET_MONITOR_INTERVAL = config.token_sell.wallet_token_balances_monitor_
 
 // Trading variables
 const BUY_PROVIDER = config.token_buy.provider;
-let BUY_AMOUNT = CFG.POSITION_SIZE; // Will be updated dynamically
+let BUY_AMOUNT = tradingParams.positionSizeSOL; // From botController, updated dynamically
 const SIM_MODE = config.checks.simulation_mode || false;
 const PLAY_SOUND = config.token_buy.play_sound || false;
 const OPEN_BROWSER = config.token_buy.open_browser || false;
@@ -254,7 +256,7 @@ const BUY_COOLDOWN = Infinity; // Never allow re-buy
 // Rate limiting  
 let tradesThisMinute = 0;
 let currentMinute = new Date().getMinutes();
-const MAX_TRADES_PER_MINUTE = CFG.MAX_TRADES_PER_MINUTE;  // Modify as performance improves & gRPC gets added
+const MAX_TRADES_PER_MINUTE = 60; // Derived from botController fatigue management (60 trades max per minute)
 
 // ============================================
 // TAX & WALLET MANAGEMENT FUNCTIONS
@@ -309,8 +311,8 @@ async function resetForLiveTrading(): Promise<void> {
   console.log("🔄 RESETTING FOR LIVE TRADING...");
   
   // Reset session to start from beginning
-  currentSessionIndex = 0;
-  currentSession = POOL_SESSIONS[0];
+  botController.resetToSession(0);
+  currentSession = getCurrentSessionInfo();
   currentWalletIndex = 0;
   
   // OPTIONAL: Reset lifetime profits if you want completely fresh start
@@ -381,8 +383,8 @@ async function resetCurrentSessionOnly(): Promise<void> {
   console.log("🔄 RESETTING CURRENT SESSION (keeping lifetime stats)...");
   
   // Reset ONLY current session, keep lifetime profit
-  currentSessionIndex = 0;
-  currentSession = POOL_SESSIONS[0];
+  botController.resetToSession(0);
+  currentSession = getCurrentSessionInfo();
   
   // Keep totalLifetimeProfit and walletRotationHistory intact!
   console.log(`   📊 Keeping Lifetime NET Profit: $${totalLifetimeProfit.toLocaleString()}`);
@@ -399,44 +401,45 @@ async function rotateWallet(poolManager: any): Promise<boolean> {
   
   try {
     const currentPool = poolManager.currentPool || 0;
-    const netProfit = currentSession.netTarget - currentSession.initialPool;
-    const taxesOwed = netProfit * TAX_RATE;
-    const nextSessionTransfer = currentSession.nextSessionPool;
+    const sessionInfo = getCurrentSessionInfo();
+    const profitDistribution = botController.calculateProfitDistribution(sessionInfo.profitRequired);
+    const taxesOwed = profitDistribution.taxReserve;
+    const nextSessionTransfer = sessionInfo.nextSessionPool;
     const transferFees = nextSessionTransfer * FEE_RATE;
-    const actualNetKept = currentPool - currentSession.initialPool - taxesOwed - nextSessionTransfer - transferFees;
+    const actualNetKept = profitDistribution.withdrawn;
     
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`🔄 WALLET ROTATION - SESSION ${currentSession.sessionNumber} COMPLETE`);
+    console.log(`🔄 WALLET ROTATION - SESSION ${sessionInfo.sessionNumber} COMPLETE`);
     console.log(`${'='.repeat(60)}`);
     console.log(`📊 Session Results:`);
-    console.log(`   Initial Pool: $${currentSession.initialPool.toLocaleString()}`);
+    console.log(`   Initial Pool: $${sessionInfo.initialPool.toLocaleString()}`);
     console.log(`   Gross Reached: $${currentPool.toLocaleString()}`);
-    console.log(`   Gross Target: $${currentSession.grossTarget.toLocaleString()} ✅`);
+    console.log(`   Target Pool: $${sessionInfo.targetPool.toLocaleString()} ✅`);
     
     console.log(`\n💰 Fund Breakdown:`);
     console.log(`   Gross Pool: $${currentPool.toLocaleString()}`);
-    console.log(`   - Initial: $${currentSession.initialPool.toLocaleString()}`);
-    console.log(`   - Taxes (40%): $${taxesOwed.toLocaleString()}`);
+    console.log(`   - Initial: $${sessionInfo.initialPool.toLocaleString()}`);
+    console.log(`   - Taxes (${sessionInfo.taxReservePercent}%): $${taxesOwed.toLocaleString()}`);
     console.log(`   - Next Session: $${nextSessionTransfer.toLocaleString()}`);
     console.log(`   - Transfer Fees: $${transferFees.toLocaleString()}`);
     console.log(`   = NET KEPT: $${actualNetKept.toLocaleString()} ✅`);
     
     // Verify we're keeping the right amount
-    if (Math.abs(actualNetKept - currentSession.netTarget) > 100) {
-      console.log(`\n⚠️ WARNING: Net kept ($${actualNetKept.toFixed(0)}) differs from target ($${currentSession.netTarget})`);
+    const targetNetProfit = sessionInfo.profitRequired;
+    if (Math.abs(actualNetKept - targetNetProfit) > 100) {
+      console.log(`\n⚠️ WARNING: Net kept ($${actualNetKept.toFixed(0)}) differs from target ($${targetNetProfit})`);
     }
     
     // Record current wallet history
     const walletRecord = {
-      sessionNumber: currentSession.sessionNumber,
+      sessionNumber: sessionInfo.sessionNumber,
       walletIndex: currentWalletIndex,
       startTime: stats.startTime,
       endTime: new Date(),
-      initialPool: currentSession.initialPool,
-      netTarget: currentSession.netTarget,
-      grossTarget: currentSession.grossTarget,
+      initialPool: sessionInfo.initialPool,
+      targetPool: sessionInfo.targetPool,
       finalPool: currentPool,
-      netProfit: netProfit,
+      profitRequired: sessionInfo.profitRequired,
       taxReserve: taxesOwed,
       nextSessionPool: nextSessionTransfer,
       profitKept: actualNetKept,
@@ -507,12 +510,12 @@ End: ${walletRecord.endTime}
 
 TARGETS:
 Initial Pool: $${walletRecord.initialPool.toLocaleString()}
-Net Target: $${walletRecord.netTarget.toLocaleString()}
-Gross Target: $${walletRecord.grossTarget.toLocaleString()}
+Target Pool: $${walletRecord.targetPool.toLocaleString()}
+Profit Required: $${walletRecord.profitRequired.toLocaleString()}
 
 RESULTS:
 Final Pool: $${walletRecord.finalPool.toLocaleString()}
-Net Profit: $${walletRecord.netProfit.toLocaleString()}
+Profit Required: $${walletRecord.profitRequired.toLocaleString()}
 Growth Achieved: ${(walletRecord.finalPool / walletRecord.initialPool).toFixed(2)}x
 
 ALLOCATIONS:
@@ -1304,9 +1307,11 @@ function printStatus(): void {
         
         // Show next session preview if close to target
         if (parseFloat(progress) > 75) {
-          const nextSession = POOL_SESSIONS[Math.min(currentSessionIndex + 1, POOL_SESSIONS.length - 1)];
+          const nextSession = botController.getNextSession();
           console.log(`\n🎯 NEXT SESSION PREVIEW:`);
-          console.log(`   Session ${nextSession.sessionNumber}: $${nextSession.initialPool.toLocaleString()} → $${nextSession.netTarget.toLocaleString()} net`);
+          if (nextSession) {
+            console.log(`   Session ${nextSession.sessionNumber}: $${nextSession.initialPool.toLocaleString()} → $${nextSession.targetPool.toLocaleString()} target`);
+          }
         }
         
         // Show wallet rotation info
