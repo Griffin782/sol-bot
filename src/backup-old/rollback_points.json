@@ -1,0 +1,20 @@
+[
+  {
+    "id": "critical_2025-08-27T20-48-28",
+    "timestamp": "2025-08-27T20:48:28.783Z",
+    "version": "2025-08-27T20-48-28",
+    "description": "Critical backup: System test backup",
+    "files": [
+      "./src/index.ts",
+      "./src/config.ts",
+      "./src/configBridge.ts",
+      "./src/enhanced/masterConfig.ts",
+      "./src/enhanced/token-queue-system.ts",
+      "./src/security/securityManager.ts",
+      "./src/security/securityIntegration.ts",
+      "./package.json",
+      "./tsconfig.json"
+    ],
+    "critical": true
+  }
+]

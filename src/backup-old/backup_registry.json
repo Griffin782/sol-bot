@@ -1,0 +1,23 @@
+{
+  "created": "2025-08-27T09:30:00.000Z",
+  "totalBackups": 0,
+  "lastBackup": null,
+  "autoBackup": true,
+  "retentionDays": 30,
+  "backupSchedule": {
+    "critical": "on-change",
+    "daily": "24h",
+    "config": "on-change",
+    "trading": "session-end"
+  },
+  "rollbackSafety": {
+    "requireConfirmation": true,
+    "createPreRollbackBackup": true,
+    "allowCriticalRollback": true
+  },
+  "storage": {
+    "maxTotalSize": "1GB",
+    "compressBackups": false,
+    "checksumVerification": true
+  }
+}

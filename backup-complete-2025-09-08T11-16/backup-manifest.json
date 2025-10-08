@@ -1,0 +1,119 @@
+{
+  "backup_info": {
+    "created_at": "2025-09-08T11:16:16.515Z",
+    "backup_directory": "backup-complete-2025-09-08T11-16",
+    "total_files": 18,
+    "backed_up_files": 16
+  },
+  "files": {
+    "src/index.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\index.ts",
+      "original_size": 65545,
+      "backup_time": "2025-09-08T11:16:16.476Z"
+    },
+    "src/config.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\config.ts",
+      "original_size": 3238,
+      "backup_time": "2025-09-08T11:16:16.478Z"
+    },
+    "src/configBridge.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\configBridge.ts",
+      "original_size": 4831,
+      "backup_time": "2025-09-08T11:16:16.479Z"
+    },
+    "src/advanced-features.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\advanced-features.ts",
+      "original_size": 21957,
+      "backup_time": "2025-09-08T11:16:16.480Z"
+    },
+    "src/enhanced/masterConfig.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\enhanced\\masterConfig.ts",
+      "original_size": 24283,
+      "backup_time": "2025-09-08T11:16:16.481Z"
+    },
+    "src/enhanced/token-queue-system.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\enhanced\\token-queue-system.ts",
+      "original_size": 31035,
+      "backup_time": "2025-09-08T11:16:16.483Z"
+    },
+    "src/enhanced/performanceLogger.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\enhanced\\performanceLogger.ts",
+      "original_size": 11216,
+      "backup_time": "2025-09-08T11:16:16.484Z"
+    },
+    "src/enhanced/tokenAnalyzer.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\enhanced\\tokenAnalyzer.ts",
+      "original_size": 10281,
+      "backup_time": "2025-09-08T11:16:16.485Z"
+    },
+    "src/utils/handlers/walletHandler.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\utils\\handlers\\walletHandler.ts",
+      "original_size": 4603,
+      "backup_time": "2025-09-08T11:16:16.487Z"
+    },
+    "src/utils/handlers/jupiterHandler.ts": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\src\\utils\\handlers\\jupiterHandler.ts",
+      "original_size": 9823,
+      "backup_time": "2025-09-08T11:16:16.488Z"
+    },
+    ".env": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\config\\.env",
+      "original_size": 1217,
+      "backup_time": "2025-09-08T11:16:16.490Z"
+    },
+    "package.json": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\config\\package.json",
+      "original_size": 1524,
+      "backup_time": "2025-09-08T11:16:16.491Z"
+    },
+    "tsconfig.json": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\config\\tsconfig.json",
+      "original_size": 363,
+      "backup_time": "2025-09-08T11:16:16.493Z"
+    },
+    "ecosystem.config.js": {
+      "backed_up": false,
+      "reason": "file_not_found"
+    },
+    "data/pool_transactions.csv": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\data\\pool_transactions.csv",
+      "original_size": 2663957,
+      "backup_time": "2025-09-08T11:16:16.499Z"
+    },
+    "data/pending_tokens.csv": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\data\\pending_tokens.csv",
+      "original_size": 8022031,
+      "backup_time": "2025-09-08T11:16:16.512Z"
+    },
+    "data/performance_log.csv": {
+      "backed_up": false,
+      "reason": "file_not_found"
+    },
+    "package-lock.json": {
+      "backed_up": true,
+      "backup_path": "backup-complete-2025-09-08T11-16\\config\\package-lock.json",
+      "original_size": 183350,
+      "backup_time": "2025-09-08T11:16:16.515Z"
+    }
+  },
+  "system_info": {
+    "node_version": "v22.19.0",
+    "platform": "win32",
+    "cwd": "C:\\Users\\Administrator\\Desktop\\IAM\\sol-bot-main"
+  }
+}

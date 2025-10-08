@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-08-11T15:47:27.252Z",
+  "runtime": 300,
+  "initialPool": 2000,
+  "finalPool": 2000,
+  "totalGrowth": 0,
+  "totalPnL": 0,
+  "targetPool": 100000,
+  "targetProgress": 2,
+  "totalTrades": 0,
+  "winRate": 0,
+  "roi": 0,
+  "reason": "Runtime limit reached"
+}

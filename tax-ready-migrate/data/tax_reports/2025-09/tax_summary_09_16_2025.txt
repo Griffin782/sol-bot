@@ -1,0 +1,34 @@
+SOL-BOT TAX SUMMARY REPORT
+Generated: 2025-09-16T12:22:38.290Z
+Trading Period: 12/13/2024 to 9/16/2025 
+=====================================
+
+TRADING ACTIVITY
+----------------
+Buy Transactions:  1659
+Sell Transactions: 2794
+Total Transactions: 4453
+
+FINANCIAL SUMMARY
+-----------------
+Total Invested:    $66619.97
+Total Received:    $473653.95
+Gross Profit/Loss:   $407033.98
+Tax Reserve (40%): $162813.59
+Net After Tax:     $244220.39
+
+FILES GENERATED
+---------------
+1. token_registry.json - Token mappings
+2. tax_export_2025.csv - For tax services
+3. tax_summary_2025.txt - This report
+
+COMPATIBLE WITH
+---------------
+• CoinTracker
+• Koinly
+• TurboTax
+• RP2 (Open Source)
+
+Wallet: EmKj5PB2V6QHQ3uD2NkwGSEum3C5z61p8ehWAGyMcBUV
+=====================================

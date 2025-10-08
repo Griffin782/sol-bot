@@ -1,0 +1,2 @@
+﻿timestamp,action,amount,balance,poolBalance,tradeCount,details
+2025-09-26T19:21:05.265Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions

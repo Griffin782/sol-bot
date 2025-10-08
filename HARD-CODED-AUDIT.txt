@@ -1,0 +1,85 @@
+Search src/ directory for these numbers: 0.089, 0.00089, 600, 7000, 100000, 86400, 20
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 364
+CODE: positionSize: 0.089,           // ~$40 at current SOL price
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.pool.positionSizeSOL
+---
+
+FILE: src/enhanced/automated-reporter.ts
+LINE: 187
+CODE: buyAmount: number = 0.089,
+PROBLEM: Hard-coded position size parameter
+FIX: buyAmount: number = MASTER_SETTINGS.pool.positionSizeSOL,
+---
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 358
+CODE: initialPool: 600,
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.pool.initialPool
+---
+
+FILE: src/reset-for-live.js
+LINE: 183
+CODE: initialPool: 600,
+PROBLEM: Hard-coded config value should reference UNIFIED-CONTROL
+FIX: initialPool: MASTER_SETTINGS.pool.initialPool,
+---
+
+FILE: src/reset-for-live.js
+LINE: 184
+CODE: targetPool: 7000,
+PROBLEM: Hard-coded config value should reference UNIFIED-CONTROL
+FIX: targetPool: MASTER_SETTINGS.sessions[0].targetPool,
+---
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 359
+CODE: targetPool: 100000,
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.pool.targetPoolUSD
+---
+
+FILE: src/live-monitor-backup.ts
+LINE: 207
+CODE: const targets = [6000, 15000, 30000, 100000]; // Simplified targets
+PROBLEM: Hard-coded target values should reference sessions
+FIX: const targets = MASTER_SETTINGS.sessions.map(s => s.targetPool);
+---
+
+FILE: src/live-monitor-backup.ts
+LINE: 653
+CODE: const targetAmounts = [6000, 15000, 30000, 100000];
+PROBLEM: Hard-coded target values should reference sessions
+FIX: const targetAmounts = MASTER_SETTINGS.sessions.map(s => s.targetPool);
+---
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 348
+CODE: maxRuntime: 86400,             // 24 hours max
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.limits.maxRuntime
+---
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 370
+CODE: maxPositions: 20,
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.pool.maxPositions
+---
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 351
+CODE: reconnectDelay: 5000,
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.limits.rateLimitDelay
+---
+
+FILE: src/enhanced/masterConfig.ts
+LINE: 352
+CODE: checkInterval: 5000,           // Check positions every 5 seconds
+PROBLEM: Hard-coded config value duplicates UNIFIED-CONTROL
+FIX: Remove this line - use MASTER_SETTINGS.limits.checkInterval
+---

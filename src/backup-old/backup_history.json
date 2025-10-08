@@ -1,0 +1,65 @@
+[
+  {
+    "timestamp": "2025-08-27T20:48:28.783Z",
+    "version": "2025-08-27T20-48-28",
+    "description": "critical backup",
+    "files": [
+      {
+        "original": "./src/index.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\index.ts",
+        "size": 65545,
+        "checksum": "10009"
+      },
+      {
+        "original": "./src/config.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\config.ts",
+        "size": 3238,
+        "checksum": "ca6"
+      },
+      {
+        "original": "./src/configBridge.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\configBridge.ts",
+        "size": 4831,
+        "checksum": "12df"
+      },
+      {
+        "original": "./src/enhanced/masterConfig.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\masterConfig.ts",
+        "size": 24285,
+        "checksum": "5edd"
+      },
+      {
+        "original": "./src/enhanced/token-queue-system.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\token-queue-system.ts",
+        "size": 31035,
+        "checksum": "793b"
+      },
+      {
+        "original": "./src/security/securityManager.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\securityManager.ts",
+        "size": 61159,
+        "checksum": "eee7"
+      },
+      {
+        "original": "./src/security/securityIntegration.ts",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\securityIntegration.ts",
+        "size": 13672,
+        "checksum": "3568"
+      },
+      {
+        "original": "./package.json",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\package.json",
+        "size": 1524,
+        "checksum": "5f4"
+      },
+      {
+        "original": "./tsconfig.json",
+        "backup": "src\\backup-old\\versions\\critical\\critical_2025-08-27T20-48-28\\tsconfig.json",
+        "size": 363,
+        "checksum": "16b"
+      }
+    ],
+    "reason": "System test backup",
+    "success": true
+  }
+]

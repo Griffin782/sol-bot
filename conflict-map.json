@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-09-11T20:33:01.744Z",
+  "conflicts": [
+    {
+      "configKey": "initialPool",
+      "zMasterConfig": "600",
+      "masterConfig": "1500",
+      "resolution": "Use z-masterConfig value"
+    },
+    {
+      "configKey": "targetPool",
+      "zMasterConfig": "1701.75",
+      "masterConfig": "7000",
+      "resolution": "Use z-masterConfig value"
+    },
+    {
+      "configKey": "positionSize",
+      "zMasterConfig": "0.089",
+      "masterConfig": "0.2",
+      "resolution": "Use z-masterConfig value"
+    },
+    {
+      "configKey": "duration",
+      "zMasterConfig": "1200",
+      "masterConfig": "3600",
+      "resolution": "Use z-masterConfig value"
+    }
+  ],
+  "configFiles": [
+    {
+      "path": "z-new-controls/z-masterConfig.ts",
+      "exists": true,
+      "values": {
+        "initialPool": 600,
+        "targetPool": 1701.75,
+        "positionSize": 0.089,
+        "duration": 1200
+      },
+      "errors": []
+    },
+    {
+      "path": "src/enhanced/masterConfig.ts",
+      "exists": true,
+      "values": {
+        "initialPool": 1500,
+        "targetPool": 7000,
+        "positionSize": 0.2,
+        "duration": 3600
+      },
+      "errors": []
+    },
+    {
+      "path": "src/config.ts",
+      "exists": true,
+      "values": {},
+      "errors": []
+    },
+    {
+      "path": "src/configBridge.ts",
+      "exists": true,
+      "values": {},
+      "errors": []
+    },
+    {
+      "path": "z-new-controls/z-configBridge.ts",
+      "exists": true,
+      "values": {},
+      "errors": []
+    }
+  ],
+  "recommendedAction": "Run unify-config.ts to force all imports to use z-masterConfig.ts"
+}

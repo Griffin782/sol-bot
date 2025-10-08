@@ -1,0 +1,64 @@
+{
+  "whitelist": {
+    "enabled": true,
+    "allowedIPs": [
+      "127.0.0.1",
+      "::1",
+      "104.171.163.149",
+      "67.184.226.84",
+      "104.171.163.223"
+    ],
+    "allowLocalhost": true,
+    "dynamicWhitelist": false
+  },
+  "blacklist": {
+    "enabled": true,
+    "blockedIPs": [],
+    "autoBlockAfterFailures": 3,
+    "blockDuration": 60
+  },
+  "authentication": {
+    "maxFailedAttempts": 3,
+    "lockoutDuration": 60,
+    "sessionTimeout": 30,
+    "requireMFA": false,
+    "failureWindow": 300
+  },
+  "alerts": {
+    "sms": {
+      "enabled": false,
+      "phoneNumber": "",
+      "provider": "twilio"
+    },
+    "email": {
+      "enabled": false,
+      "emailAddress": "",
+      "smtpConfig": {}
+    },
+    "webhook": {
+      "enabled": false,
+      "url": ""
+    }
+  },
+  "emergency": {
+    "hardwareWalletFlush": {
+      "enabled": true,
+      "triggerConditions": [
+        "MULTIPLE_INTRUSION",
+        "SYSTEM_COMPROMISE"
+      ],
+      "targetWallet": "",
+      "minBalanceThreshold": 100,
+      "multiFactor": {
+        "enabled": true,
+        "requiredIndicators": 2,
+        "timeWindow": 600,
+        "autoFlushThreshold": 1
+      }
+    },
+    "tradingHalt": {
+      "enabled": true,
+      "autoHalt": true
+    }
+  }
+}

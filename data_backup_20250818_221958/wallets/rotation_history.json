@@ -1,0 +1,34 @@
+[
+  {
+    "sessionNumber": 1,
+    "walletIndex": 0,
+    "startTime": "2025-08-16T23:49:09.164Z",
+    "endTime": "2025-08-17T01:24:00.049Z",
+    "initialPool": 600,
+    "netTarget": 6000,
+    "grossTarget": 10680,
+    "finalPool": 10767.412887023638,
+    "netProfit": 5400,
+    "taxReserve": 2160,
+    "nextSessionPool": 2400,
+    "profitKept": 5487.412887023638,
+    "trades": 419,
+    "winRate": 73.9856801909308
+  },
+  {
+    "sessionNumber": 1,
+    "walletIndex": 1,
+    "startTime": "2025-08-17T04:13:08.956Z",
+    "endTime": "2025-08-17T05:32:03.373Z",
+    "initialPool": 600,
+    "netTarget": 6000,
+    "grossTarget": 10680,
+    "finalPool": 10863.121590386963,
+    "netProfit": 5400,
+    "taxReserve": 2160,
+    "nextSessionPool": 2400,
+    "profitKept": 5583.121590386963,
+    "trades": 457,
+    "winRate": 76.58643326039387
+  }
+]

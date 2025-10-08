@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-08-17T13:59:22.964Z",
+  "initialPool": 5000,
+  "targetPool": 10000,
+  "reinvestPercent": 70,
+  "session1Results": {
+    "finalPool": 10020.085003966842,
+    "totalProfit": 5020.085003966845,
+    "roi": 100.40170007933689,
+    "numTrades": 100,
+    "winRate": 0.78,
+    "avgMultiplier": 2.6915122506901796,
+    "projectedTimeToTarget": 0.9971136078929425
+  },
+  "session2Projection": {
+    "finalPool": 10184.462387176876,
+    "totalProfit": 3170.4028844000927,
+    "roi": 45.20068418502816,
+    "numTrades": 100,
+    "winRate": 0.78,
+    "avgMultiplier": 2.409019056629168,
+    "projectedTimeToTarget": 0.9509898491231042
+  },
+  "taxReserve": 2008.034001586738,
+  "afterTaxProfit": 3012.0510023801066
+}

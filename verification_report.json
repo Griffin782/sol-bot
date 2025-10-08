@@ -1,0 +1,83 @@
+{
+  "timestamp": "2025-08-18T22:01:40.165Z",
+  "summary": {
+    "passed": 5,
+    "warnings": 0,
+    "failed": 2,
+    "total": 7,
+    "status": "❌ NOT READY"
+  },
+  "results": [
+    {
+      "category": "Data Files",
+      "status": "PASS",
+      "message": "pool_transactions.csv exists (3392.94 KB)"
+    },
+    {
+      "category": "Data Files",
+      "status": "PASS",
+      "message": "pending_tokens.csv exists (2367.32 KB)"
+    },
+    {
+      "category": "Data Files",
+      "status": "PASS",
+      "message": "performance_log.csv exists (0.14 KB)"
+    },
+    {
+      "category": "Pool Transactions",
+      "status": "FAIL",
+      "message": "Error parsing pool transactions: Error: Invalid Record Length: columns length is 7, got 6 on line 16447"
+    },
+    {
+      "category": "Token Queue",
+      "status": "FAIL",
+      "message": "5488 tokens queued multiple times",
+      "details": [
+        [
+          "5vhcYVKFGGvGQE7H1pkM8AyKEsWp8XzQdM1JjVVZpX1sJFBs7sh1UFkpTbyX9ti8umEpdeUWUFuT6ivZykifLiRV",
+          2
+        ],
+        [
+          "oxUaZQGiX1NSLMQe4SAGppdSTcZjh6XJHoVnbyga4ma9faRvrTjnKhb517zi4byeRmZgYS3P9DBxEhuSKrove5b",
+          2
+        ],
+        [
+          "2SYc4fgDToFUYG5BXVNU8d7kz3HESHCnjNKqN92V8RyBfypFZC3TbmiFSzs9R47Zdpd7erpaywdofvtgZWZQrT9u",
+          2
+        ],
+        [
+          "nMbDrgFsz77x1i1FazqUWEJ5vfv3Eik5QhdrykWBn3bcrCtEeBt8of4hjBGghW4WErctC9Mx9rT3WtiAA9mhDWA",
+          4
+        ],
+        [
+          "63d48rxDrhPYD1uPRmDynngeo8tTEN3y8RAXUmzMuJSTNzhDu5scxyFR64XjV2zUvpuMupAcaxasoXFxyfLhthaW",
+          2
+        ]
+      ]
+    },
+    {
+      "category": "Withdrawals",
+      "status": "PASS",
+      "message": "15 withdrawals made",
+      "details": {
+        "totalSecured": "$75000.00",
+        "totalTaxes": "$30000.00",
+        "count": 15
+      }
+    },
+    {
+      "category": "Session Progression",
+      "status": "PASS",
+      "message": "Progressed through sessions: 1",
+      "details": {
+        "totalSessions": 1,
+        "currentSession": 1
+      }
+    }
+  ],
+  "recommendations": [
+    "✅ System appears ready for live trading!",
+    "⚠️  Start with small amounts to verify everything works",
+    "📊 Monitor closely for first 24 hours"
+  ]
+}

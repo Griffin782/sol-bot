@@ -1,0 +1,182 @@
+[
+  {
+    "id": "6SXPYUeDVjGu6gx1Kb3x91AV49dXkqPtVaNkY48npump_2025-09-26T19:22:14.045Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:22:14.045Z",
+      "type": "buy",
+      "tokenMint": "6SXPYUeDVjGu6gx1Kb3x91AV49dXkqPtVaNkY48npump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914534045",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:22:14.045Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "6SXPYUeDVjGu6gx1Kb3x91AV49dXkqPtVaNkY48npump",
+    "buySignature": "jupiter_buy_1758914534045"
+  },
+  {
+    "id": "GZwBAGFBMJn8kNZKqugAFhUtpbXoAT2Sd419YRG9pump_2025-09-26T19:23:26.275Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:23:26.275Z",
+      "type": "buy",
+      "tokenMint": "GZwBAGFBMJn8kNZKqugAFhUtpbXoAT2Sd419YRG9pump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914606275",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:23:26.275Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "GZwBAGFBMJn8kNZKqugAFhUtpbXoAT2Sd419YRG9pump",
+    "buySignature": "jupiter_buy_1758914606275"
+  },
+  {
+    "id": "BCmzCD8SBswoM2EHkY7JW2b5iYzYJQjGGKfzYG79pump_2025-09-26T19:24:37.782Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:24:37.782Z",
+      "type": "buy",
+      "tokenMint": "BCmzCD8SBswoM2EHkY7JW2b5iYzYJQjGGKfzYG79pump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914677782",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:24:37.782Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "BCmzCD8SBswoM2EHkY7JW2b5iYzYJQjGGKfzYG79pump",
+    "buySignature": "jupiter_buy_1758914677782"
+  },
+  {
+    "id": "5TfRxQygooa9F51EunNgMxLwhhf6MdVuFveKXMoCpump_2025-09-26T19:25:49.452Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:25:49.452Z",
+      "type": "buy",
+      "tokenMint": "5TfRxQygooa9F51EunNgMxLwhhf6MdVuFveKXMoCpump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914749452",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:25:49.452Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "5TfRxQygooa9F51EunNgMxLwhhf6MdVuFveKXMoCpump",
+    "buySignature": "jupiter_buy_1758914749452"
+  },
+  {
+    "id": "Cu9cdintyWScYsn5xTx8DTWFpHcXSA2N3mwCiYzQpump_2025-09-26T19:27:01.043Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:27:01.043Z",
+      "type": "buy",
+      "tokenMint": "Cu9cdintyWScYsn5xTx8DTWFpHcXSA2N3mwCiYzQpump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914821043",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:27:01.043Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "Cu9cdintyWScYsn5xTx8DTWFpHcXSA2N3mwCiYzQpump",
+    "buySignature": "jupiter_buy_1758914821043"
+  },
+  {
+    "id": "7fQzuk9aY9CmgoQf5yYwYk5p9Zrbe3RbvdDi19h5pump_2025-09-26T19:28:12.881Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:28:12.881Z",
+      "type": "buy",
+      "tokenMint": "7fQzuk9aY9CmgoQf5yYwYk5p9Zrbe3RbvdDi19h5pump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914892881",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:28:12.881Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "7fQzuk9aY9CmgoQf5yYwYk5p9Zrbe3RbvdDi19h5pump",
+    "buySignature": "jupiter_buy_1758914892881"
+  },
+  {
+    "id": "asmmT7Ngvdp9WYcoGCTRmtepPgSsTV2J9hJ5juMpump_2025-09-26T19:29:30.487Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:29:30.487Z",
+      "type": "buy",
+      "tokenMint": "asmmT7Ngvdp9WYcoGCTRmtepPgSsTV2J9hJ5juMpump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758914970487",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:29:30.487Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "asmmT7Ngvdp9WYcoGCTRmtepPgSsTV2J9hJ5juMpump",
+    "buySignature": "jupiter_buy_1758914970487"
+  },
+  {
+    "id": "Gn8jK7FoQpNeWzVQMUZDaNF6x1A6zY5P3s9Dd8Q1pump_2025-09-26T19:30:42.038Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:30:42.038Z",
+      "type": "buy",
+      "tokenMint": "Gn8jK7FoQpNeWzVQMUZDaNF6x1A6zY5P3s9Dd8Q1pump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758915042038",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:30:42.038Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "Gn8jK7FoQpNeWzVQMUZDaNF6x1A6zY5P3s9Dd8Q1pump",
+    "buySignature": "jupiter_buy_1758915042038"
+  },
+  {
+    "id": "7LahBrvbahRbrStqRKwANCVPpSque1rjFr7Gd9gLKGUt_2025-09-26T19:31:53.633Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:31:53.633Z",
+      "type": "buy",
+      "tokenMint": "7LahBrvbahRbrStqRKwANCVPpSque1rjFr7Gd9gLKGUt",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758915113633",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:31:53.633Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "7LahBrvbahRbrStqRKwANCVPpSque1rjFr7Gd9gLKGUt",
+    "buySignature": "jupiter_buy_1758915113633"
+  },
+  {
+    "id": "21yDEAaDeTsa8MLQt8MW1cDkuwsiQKPLB4m7wZGwpump_2025-09-26T19:33:11.290Z",
+    "buyTransaction": {
+      "timestamp": "2025-09-26T19:33:11.290Z",
+      "type": "buy",
+      "tokenMint": "21yDEAaDeTsa8MLQt8MW1cDkuwsiQKPLB4m7wZGwpump",
+      "amount": 0.06865,
+      "signature": "jupiter_buy_1758915191290",
+      "success": false
+    },
+    "buyDate": "2025-09-26T19:33:11.290Z",
+    "buyPriceSOL": 0,
+    "buyAmountSOL": 0,
+    "buyFees": 0,
+    "costBasis": 0,
+    "tokenMint": "21yDEAaDeTsa8MLQt8MW1cDkuwsiQKPLB4m7wZGwpump",
+    "buySignature": "jupiter_buy_1758915191290"
+  }
+]
