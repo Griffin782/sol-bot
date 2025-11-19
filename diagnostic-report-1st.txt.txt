@@ -1,0 +1,995 @@
+﻿# SOL-BOT Diagnostic Report
+Generated: 2025-11-11T21:42:44.279Z
+
+## 🔍 TypeScript/JavaScript Sync Status
+
+### TypeScript/JavaScript Compilation Check
+
+| TypeScript File | JavaScript File | Status | Last Modified Diff |
+|----------------|-----------------|--------|--------------------|
+| src\advanced-features.ts | src\advanced-features.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\config.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\config.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\configBridge.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\configBridge.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\securityIntegration.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\securityIntegration.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\securityManager.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\securityManager.js | ❌ JS missing | JS file not found |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts | src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.js | ❌ JS missing | JS file not found |
+| src\botController.ts | src\botController.js | ❌ JS missing | JS file not found |
+| src\config.ts | src\config.js | ❌ JS missing | JS file not found |
+| src\core\AUTO-CONFIG.ts | src\core\AUTO-CONFIG.js | ❌ JS missing | JS file not found |
+| src\core\BOT-DIAGNOSTIC.ts | src\core\BOT-DIAGNOSTIC.js | ❌ JS missing | JS file not found |
+| src\core\CONFIG-BRIDGE.ts | src\core\CONFIG-BRIDGE.js | ❌ JS missing | JS file not found |
+| src\core\CONFIG-HISTORY.ts | src\core\CONFIG-HISTORY.js | ❌ JS missing | JS file not found |
+| src\core\CONFIG-WIZARD.ts | src\core\CONFIG-WIZARD.js | ❌ JS missing | JS file not found |
+| src\core\FORCE-TRADE-LIMIT.ts | src\core\FORCE-TRADE-LIMIT.js | ❌ JS missing | JS file not found |
+| src\core\PARTIAL-EXIT-SYSTEM.ts | src\core\PARTIAL-EXIT-SYSTEM.js | ❌ JS missing | JS file not found |
+| src\core\PRE-FLIGHT-CHECK.ts | src\core\PRE-FLIGHT-CHECK.js | ❌ JS missing | JS file not found |
+| src\core\sharedState.ts | src\core\sharedState.js | ✅ In sync | JS is current |
+| src\core\SMART-CONFIG-SYSTEM.ts | src\core\SMART-CONFIG-SYSTEM.js | ❌ JS missing | JS file not found |
+| src\core\SMART-CONFIG-VALIDATOR.ts | src\core\SMART-CONFIG-VALIDATOR.js | ❌ JS missing | JS file not found |
+| src\core\test-smart-config.ts | src\core\test-smart-config.js | ❌ JS missing | JS file not found |
+| src\core\TOKEN-QUALITY-FILTER.ts | src\core\TOKEN-QUALITY-FILTER.js | ❌ JS missing | JS file not found |
+| src\core\UNIFIED-CONTROL.ts | src\core\UNIFIED-CONTROL.js | ❌ JS missing | JS file not found |
+| src\core\VERIFY-INTEGRATION.ts | src\core\VERIFY-INTEGRATION.js | ❌ JS missing | JS file not found |
+| src\detection\grpcTokenDetection.ts | src\detection\grpcTokenDetection.js | ✅ In sync | JS is current |
+| src\detection\metadataCache.ts | src\detection\metadataCache.js | ❌ Out of sync | TS is 10168 minutes newer |
+| src\emergency-safety-wrapper.ts | src\emergency-safety-wrapper.js | ❌ JS missing | JS file not found |
+| src\enhanced\analyze-trading-session.ts | src\enhanced\analyze-trading-session.js | ❌ JS missing | JS file not found |
+| src\enhanced\automated-reporter.ts | src\enhanced\automated-reporter.js | ❌ JS missing | JS file not found |
+| src\enhanced\masterConfig.ts | src\enhanced\masterConfig.js | ❌ JS missing | JS file not found |
+| src\enhanced\performanceLogger.ts | src\enhanced\performanceLogger.js | ❌ JS missing | JS file not found |
+| src\enhanced\token-detection-test.ts | src\enhanced\token-detection-test.js | ❌ JS missing | JS file not found |
+| src\enhanced\token-queue-system-8.13-bleeding.ts | src\enhanced\token-queue-system-8.13-bleeding.js | ❌ JS missing | JS file not found |
+| src\enhanced\token-queue-system.backup.ts | src\enhanced\token-queue-system.backup.js | ❌ JS missing | JS file not found |
+| src\enhanced\token-queue-system.ts | src\enhanced\token-queue-system.js | ❌ JS missing | JS file not found |
+| src\enhanced\tokenAnalyzer.ts | src\enhanced\tokenAnalyzer.js | ❌ JS missing | JS file not found |
+| src\enhanced-monitor.ts | src\enhanced-monitor.js | ❌ JS missing | JS file not found |
+| src\graceful-shutdown.ts | src\graceful-shutdown.js | ❌ JS missing | JS file not found |
+| src\index.ts | src\index.js | ❌ JS missing | JS file not found |
+| src\live-monitor.ts | src\live-monitor.js | ❌ JS missing | JS file not found |
+| src\monitoring\csv-monitor.ts | src\monitoring\csv-monitor.js | ❌ JS missing | JS file not found |
+| src\monitoring\enhancedBuySellLogger.ts | src\monitoring\enhancedBuySellLogger.js | ❌ JS missing | JS file not found |
+| src\monitoring\grpcPoolParser.ts | src\monitoring\grpcPoolParser.js | ❌ JS missing | JS file not found |
+| src\monitoring\lifecycleIntegration.ts | src\monitoring\lifecycleIntegration.js | ✅ In sync | JS is current |
+| src\monitoring\positionMonitor.ts | src\monitoring\positionMonitor.js | ✅ In sync | JS is current |
+| src\monitoring\tokenHealthMonitor.ts | src\monitoring\tokenHealthMonitor.js | ✅ In sync | JS is current |
+| src\secure-pool-system.ts | src\secure-pool-system.js | ❌ JS missing | JS file not found |
+| src\secure-transfer-system.ts | src\secure-transfer-system.js | ❌ JS missing | JS file not found |
+| src\security\securityIntegration.ts | src\security\securityIntegration.js | ❌ JS missing | JS file not found |
+| src\security\securityManager.ts | src\security\securityManager.js | ❌ JS missing | JS file not found |
+| src\strategies\exitStrategy.ts | src\strategies\exitStrategy.js | ✅ In sync | JS is current |
+| src\test-session-fix.ts | src\test-session-fix.js | ❌ JS missing | JS file not found |
+| src\tracker\db.ts | src\tracker\db.js | ❌ JS missing | JS file not found |
+| src\trading\sellExecutor.ts | src\trading\sellExecutor.js | ❌ JS missing | JS file not found |
+| src\types.ts | src\types.js | ✅ In sync | JS is current |
+| src\utils\balance-checker.ts | src\utils\balance-checker.js | ❌ JS missing | JS file not found |
+| src\utils\configValidator.ts | src\utils\configValidator.js | ❌ JS missing | JS file not found |
+| src\utils\env-validator.ts | src\utils\env-validator.js | ❌ JS missing | JS file not found |
+| src\utils\func\addressFormatter.ts | src\utils\func\addressFormatter.js | ❌ JS missing | JS file not found |
+| src\utils\func\index.ts | src\utils\func\index.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\childProcessHandler.ts | src\utils\handlers\childProcessHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\jupiterHandler.ts | src\utils\handlers\jupiterHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\pumpswapHandler.ts | src\utils\handlers\pumpswapHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\rugCheckHandler.ts | src\utils\handlers\rugCheckHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\signatureHandler.ts | src\utils\handlers\signatureHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\sniperooHandler.ts | src\utils\handlers\sniperooHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\tokenHandler.ts | src\utils\handlers\tokenHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\walletHandler.ts | src\utils\handlers\walletHandler.js | ❌ JS missing | JS file not found |
+| src\utils\handlers\walletTokenHandler.ts | src\utils\handlers\walletTokenHandler.js | ❌ JS missing | JS file not found |
+| src\utils\jupiter-env-validator.ts | src\utils\jupiter-env-validator.js | ❌ JS missing | JS file not found |
+| src\utils\managers\backupManager.ts | src\utils\managers\backupManager.js | ❌ JS missing | JS file not found |
+| src\utils\managers\grpcManager.ts | src\utils\managers\grpcManager.js | ✅ In sync | JS is current |
+| src\utils\managers\integrationManager.ts | src\utils\managers\integrationManager.js | ❌ JS missing | JS file not found |
+| src\utils\managers\logManager.ts | src\utils\managers\logManager.js | ❌ JS missing | JS file not found |
+| src\utils\managers\sessionManager.ts | src\utils\managers\sessionManager.js | ❌ JS missing | JS file not found |
+| src\utils\managers\walletRotator.ts | src\utils\managers\walletRotator.js | ❌ JS missing | JS file not found |
+| src\utils\managers\websocketManager.ts | src\utils\managers\websocketManager.js | ❌ JS missing | JS file not found |
+| src\utils\poolDerivation.ts | src\utils\poolDerivation.js | ✅ In sync | JS is current |
+| src\utils\process-cleanup.ts | src\utils\process-cleanup.js | ❌ JS missing | JS file not found |
+| src\utils\rateLimiter.ts | src\utils\rateLimiter.js | ❌ JS missing | JS file not found |
+| src\utils\realTradingHandler.ts | src\utils\realTradingHandler.js | ❌ JS missing | JS file not found |
+| src\utils\rpcRateLimiter.ts | src\utils\rpcRateLimiter.js | ❌ JS missing | JS file not found |
+| src\utils\simple-jupiter-validator.ts | src\utils\simple-jupiter-validator.js | ❌ JS missing | JS file not found |
+| src\utils\vip-token-check.ts | src\utils\vip-token-check.js | ❌ JS missing | JS file not found |
+
+**Summary:** 9 files in sync, 76 files with issues.
+
+⚠️ **Compilation needed!** Run `npm run build` or `npx tsc` to compile TypeScript to JavaScript.
+
+## 🔍 Critical Pattern Search
+
+### Metadata Monitor References
+
+⚠️ **metadata_monitor references found:**
+
+```
+src\monitoring\positionMonitor.js:288: // REMOVED: metadata_monitor (Nov 11, 2025)
+src\monitoring\positionMonitor.ts:271: // REMOVED: metadata_monitor (Nov 10, 2025)```
+
+### Stream Accounts Subscription Calls
+
+No streamAccounts calls found.
+
+### Circuit Breaker Implementation
+
+✅ Circuit breaker implementation found!
+
+```
+src\emergency-safety-wrapper.ts:81: // Circuit breaker - stops trading if losing too much
+src\monitoring\positionMonitor.js:96: // Circuit breaker properties (Nov 11, 2025)
+src\monitoring\positionMonitor.js:420: // Circuit breaker - check for repeated same error
+src\monitoring\positionMonitor.ts:406: // PHASE 2 FIX: Circuit breaker - check for repeated same error```
+
+### Reconnect Attempts Property
+
+✅ reconnectAttempts property found!
+
+```
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:21: reconnectAttempts: number;     // RPC reconnection attempts
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:337: reconnectAttempts: 5,
+src\detection\grpcTokenDetection.js:75: this.reconnectAttempts = 0;
+src\detection\grpcTokenDetection.js:190: _this.reconnectAttempts = 0;
+src\detection\grpcTokenDetection.js:226: if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+src\detection\grpcTokenDetection.js:238: var exponentialDelay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
+src\detection\grpcTokenDetection.js:241: this.reconnectAttempts++;
+src\detection\grpcTokenDetection.js:242: this.logFunction("".concat(this.getCurrentTime()), "\u23F3 Reconnection attempt ".concat(this.reconnectAttempts, "/").concat(this.maxReconnectAttempts, " in ").concat((delay / 1000).toFixed(0), "s..."), "yellow");
+src\detection\grpcTokenDetection.js:278: this.logFunction("".concat(this.getCurrentTime()), "\uD83D\uDD04 RESTARTING token detection connection (attempt ".concat(this.reconnectAttempts, ")"), "yellow");
+src\detection\grpcTokenDetection.ts:56: private reconnectAttempts: number = 0;
+src\detection\grpcTokenDetection.ts:165: this.reconnectAttempts = 0;
+src\detection\grpcTokenDetection.ts:206: if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+src\detection\grpcTokenDetection.ts:225: const exponentialDelay = this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts);
+src\detection\grpcTokenDetection.ts:229: this.reconnectAttempts++;
+src\detection\grpcTokenDetection.ts:233: `⏳ Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${(delay/1000).toFixed(0)}s...`,
+src\detection\grpcTokenDetection.ts:257: this.logFunction(`${this.getCurrentTime()}`, `🔄 RESTARTING token detection connection (attempt ${this.reconnectAttempts})`, "yellow");
+src\enhanced\masterConfig.ts:33: reconnectAttempts: number;     // RPC reconnection attempts
+src\enhanced\masterConfig.ts:350: reconnectAttempts: 5,
+src\monitoring\positionMonitor.js:97: this.reconnectAttempts = 0;
+src\monitoring\positionMonitor.js:343: this.reconnectAttempts = 0;
+src\monitoring\positionMonitor.js:436: if (_this.reconnectAttempts >= _this.maxReconnectAttempts) {
+src\monitoring\positionMonitor.js:443: var backoff = Math.min(5000 * Math.pow(2, _this.reconnectAttempts), 60000);
+src\monitoring\positionMonitor.js:444: _this.reconnectAttempts++;
+src\monitoring\positionMonitor.js:446: console.log("[Position Monitor] Reconnect attempt ".concat(_this.reconnectAttempts, "/").concat(_this.maxReconnectAttempts, " in ").concat(backoff, "ms..."));
+src\monitoring\positionMonitor.ts:77: private reconnectAttempts: number = 0;
+src\monitoring\positionMonitor.ts:319: this.reconnectAttempts = 0;
+src\monitoring\positionMonitor.ts:422: if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+src\monitoring\positionMonitor.ts:429: const backoff = Math.min(5000 * Math.pow(2, this.reconnectAttempts), 60000);
+src\monitoring\positionMonitor.ts:430: this.reconnectAttempts++;
+src\monitoring\positionMonitor.ts:432: console.log(`[Position Monitor] Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${backoff}ms...`);```
+
+### Error Handling for "String is the wrong size"
+
+Found handling for "String is the wrong size" error:
+
+```
+src\monitoring\positionMonitor.js:289: // Caused "String is the wrong size" gRPC error → infinite reconnect loop → HTTP 429
+src\monitoring\positionMonitor.ts:272: // Caused "String is the wrong size" gRPC error → infinite reconnect loop → 6min crash```
+
+## 🔧 Compilation Status
+
+### TypeScript Configuration
+
+- **Target:** ES2020
+- **Module:** commonjs
+- **OutDir:** ./dist
+- **Watch Mode:** Disabled
+
+⚠️ **Watch mode is disabled.** TypeScript files won't automatically compile when changed.
+
+### NPM Scripts
+
+- ✅ **Build Script:** `tsc`
+- **Dev Script:** `ts-node src/index.ts`
+- ⚠️ **No Watch Script Found!** Consider adding a watch script for automatic compilation.
+
+### Compilation Commands
+
+To ensure TypeScript files are compiled to JavaScript, run one of these commands:
+
+```bash
+# Compile TypeScript files
+npm run build
+
+# Or if build script is not defined
+npx tsc
+
+# For automatic compilation during development
+npm run watch
+
+# Or if watch script is not defined
+npx tsc --watch
+```
+
+## ⚙️ Configuration Analysis
+
+### Config Files Found (6)
+
+| File | Last Modified | Size |
+|------|--------------|------|
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\config.ts | 2025-08-18T09:45:00.000Z | 3.16 KB |
+| src\config.ts | 2025-11-06T16:05:06.764Z | 3.3 KB |
+| src\core\test-smart-config.ts | 2025-09-23T23:19:43.696Z | 671 Bytes |
+| src\test-config.js | 2025-08-20T02:48:16.000Z | 632 Bytes |
+| src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts | 2025-08-25T05:52:22.000Z | 23.72 KB |
+| src\enhanced\masterConfig.ts | 2025-09-21T02:39:51.325Z | 23.66 KB |
+
+⚠️ **Multiple config files found!** This may lead to confusion and overrides.
+
+### Hardcoded Values
+
+**BUY_AMOUNT** found in:
+
+```
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\configBridge.ts:15: export const BUY_AMOUNT_SOL = config.trading?.buyAmountSol || 0.089;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:222: let BUY_AMOUNT = tradingParams.positionSizeSOL; // From botController, updated dynamically
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1024: // Update BUY_AMOUNT dynamically
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1025: BUY_AMOUNT = calculatePositionSizeInSOL();
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1073: console.log(`   Position: ${BUY_AMOUNT} SOL ($${(BUY_AMOUNT * 170).toFixed(2)})`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1155: logEngine.writeLog(`${getCurrentTime()}`, `Amount: ${BUY_AMOUNT} SOL`, "white");
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1167: result = await buyToken(returnedMint, BUY_AMOUNT, logEngine);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1170: result = await swapToken(WSOL_MINT, returnedMint, BUY_AMOUNT, logEngine);
+src\core\CONFIG-BRIDGE.ts:34: export const BUY_AMOUNT = getPositionSizeSOL();              // 0.00089 SOL (YOUR SETTING!)
+src\core\CONFIG-BRIDGE.ts:35: export const POSITION_SIZE = getPositionSizeSOL();           // Same as BUY_AMOUNT
+src\core\CONFIG-BRIDGE.ts:78: sol_amount: BUY_AMOUNT,
+src\core\CONFIG-BRIDGE.ts:242: BUY_AMOUNT,
+src\core\CONFIG-BRIDGE.ts:328: console.log(`   BUY_AMOUNT: ${BUY_AMOUNT} SOL (${POSITION_SIZE_USD} USD)`);
+src\core\CONFIG-BRIDGE.ts:337: BUY_AMOUNT,
+src\index.ts:3: import { BUY_AMOUNT, MAX_TRADES, POSITION_SIZE, TEST_MODE } from './core/CONFIG-BRIDGE';
+src\index.ts:203: // BUY_AMOUNT now imported from CONFIG-BRIDGE (unified control)
+src\index.ts:1372: let actualBuyAmount = BUY_AMOUNT; // Declare at function scope
+src\index.ts:1421: // Update BUY_AMOUNT dynamically
+src\index.ts:1473: logEngine.writeLog(`${getCurrentTime()}`, `[TEST MODE] Amount: ${BUY_AMOUNT} SOL`, "white");
+src\index.ts:1482: const simulatedEntryPriceSOL = BUY_AMOUNT / simulatedTokenAmount; // Calculate entry price
+src\index.ts:1488: console.log(`   SOL Invested: ${BUY_AMOUNT} SOL`);
+src\index.ts:1499: BUY_AMOUNT,                // SOL invested
+src\index.ts:1545: console.log("  - Amount:", BUY_AMOUNT);
+src\index.ts:1562: const currentPositionUSD = BUY_AMOUNT * SOL_PRICE; // Using dynamic SOL price
+src\index.ts:1564: actualBuyAmount = BUY_AMOUNT; // Update function-scope variable
+src\index.ts:1569: console.log(`   Original: ${BUY_AMOUNT} SOL → Capped: ${actualBuyAmount.toFixed(4)} SOL`);
+src\index.ts:1603: amount: BUY_AMOUNT,
+src\index.ts:1617: console.log("  - Amount:", BUY_AMOUNT);
+src\index.ts:1632: const currentPositionUSD = BUY_AMOUNT * SOL_PRICE; // Using dynamic SOL price
+src\index.ts:1633: actualBuyAmount = BUY_AMOUNT; // Update function-scope variable
+src\index.ts:1638: console.log(`   Original: ${BUY_AMOUNT} SOL → Capped: ${actualBuyAmount.toFixed(4)} SOL`);
+src\index.ts:1673: console.log('[TAX_DEBUG] Buy executed:', { tokenMint: returnedMint, amount: BUY_AMOUNT, price: 'estimated' });
+src\index.ts:1681: amount: BUY_AMOUNT,
+src\index.ts:1710: amount: BUY_AMOUNT,
+src\index.ts:1724: console.log("  - Amount:", BUY_AMOUNT);
+src\index.ts:1741: const currentPositionUSD = BUY_AMOUNT * SOL_PRICE; // Using dynamic SOL price
+src\index.ts:1742: actualBuyAmount = BUY_AMOUNT; // Update function-scope variable
+src\index.ts:1747: console.log(`   Original: ${BUY_AMOUNT} SOL → Capped: ${actualBuyAmount.toFixed(4)} SOL`);
+src\index.ts:1776: console.log('[TAX_DEBUG] Buy executed:', { tokenMint: returnedMint, amount: BUY_AMOUNT, price: 'estimated' });
+src\index.ts:1784: amount: BUY_AMOUNT,
+src\index.ts:1813: amount: BUY_AMOUNT,
+src\index.ts:1892: totalLoss += BUY_AMOUNT;
+src\index.ts:1893: console.log(`💸 Loss tracked: ${BUY_AMOUNT} SOL (Total: ${totalLoss.toFixed(4)} SOL)`);```
+
+**positionSize** found in:
+
+```
+src\advanced-features.ts:645: positionSize: number,
+src\advanced-features.ts:655: const positionInUsd = positionSize * solPrice;
+src\advanced-features.ts:666: public logFeeAnalysis(positionSize: number, solPrice: number): void {
+src\advanced-features.ts:667: const analysis = this.calculateFeeImpact(positionSize, solPrice, 100000);
+src\advanced-features.ts:676: const tradesPerPool = 1000 / (positionSize * solPrice);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\config.ts:43: sol_amount: masterConfig.pool.positionSize, // From masterConfig
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\configBridge.ts:10: export const POSITION_SIZE = config.pool?.positionSize || 0.089;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:222: let BUY_AMOUNT = tradingParams.positionSizeSOL; // From botController, updated dynamically
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:575: const positionSize = masterConfig?.pool?.positionSize || config.pool?.positionSize || 0.089;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:582: positionSize: positionSize,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:583: positionSizeUSD: positionSize * 170,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:612: console.log(`📊 Position Size: ${positionSize} SOL ($${(positionSize * 170).toFixed(2)})`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:38: positionSize: number;          // SOL per trade
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:42: positionSizePercent: number;   // % of pool per position
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:351: positionSize: 0.2,           // ~$40 at current SOL price
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:355: positionSizePercent: 5,        // 5% of pool per position
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:638: if (cfg.pool.positionSizePercent > cfg.pool.maxPoolRisk) {
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:53: private positionSize: number; // USD per trade
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:54: private positionSizeSOL: number; // SOL equivalent
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:67: this.positionSize = positionSizeUSD;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:68: this.positionSizeSOL = positionSizeUSD / 170; // Using ~$170 per SOL
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:78: return this.currentPool >= this.positionSize;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:84: console.log(`💸 Current pool: $${this.currentPool.toFixed(2)} | Need: $${this.positionSize}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:89: this.currentPool -= this.positionSize;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:94: this.logPoolTransaction('trade_execution', -this.positionSize,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:108: const dollarPnL = (this.positionSize * profitPercentage) / 100;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:112: this.currentPool += this.positionSize + dollarPnL;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:124: this.logPoolTransaction(transactionType, this.positionSize + dollarPnL,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:138: if (this.currentPool >= milestone && (this.currentPool - this.positionSize - (this.totalPnL / Math.max(this.totalTrades, 1))) < milestone) {
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:169: console.log(`💸 Position Size: $${this.positionSize} (${this.positionSizeSOL.toFixed(4)} SOL)`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:207: console.log(`💸 Position Size Used: $${this.positionSize}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:243: poolBefore: type === 'trade_execution' ? this.currentPool + this.positionSize : this.currentPool - amount,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:329: console.log(`🔍 DEBUG: TokenQueueManager received config:`, config?.positionSizeUSD || 'not set');
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:337: const positionSizeUSD = config?.positionSizeUSD || (config?.positionSize ? config.positionSize * 170 : 15);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:338: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:340: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:504: console.log(`   💰 Using position size: $${this.config?.positionSizeUSD || 15}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:530: console.log(`   ✅ BOUGHT: $${this.config?.positionSizeUSD || 15} position @ $${entryPrice.toFixed(6)}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:561: this.logTradingAction(token, 'immediate_buy', this.config?.positionSizeUSD || 15, entryPrice);
+src\botController.ts:17: const baseSize = MASTER_SETTINGS.pool.positionSizeUSD;
+src\botController.ts:40: positionSizeUSD: number;         // USD amount per trade for this session
+src\botController.ts:54: positionSizeUSD: number;        // USD base amount per trade
+src\botController.ts:55: positionSizeSOL: number;        // Calculated dynamically from USD
+src\botController.ts:228: positionSizeUSD: currentSession.positionSizeUSD, // USD base amount
+src\botController.ts:229: positionSizeSOL: 0.12,          // Will be calculated dynamically
+src\botController.ts:277: this.tradingParams.positionSizeSOL = convertUSDToSOL(
+src\botController.ts:278: this.tradingParams.positionSizeUSD,
+src\botController.ts:282: console.log(`💰 SOL Price Updated: $${newPrice.toFixed(2)} | Position: ${this.tradingParams.positionSizeSOL.toFixed(4)} SOL ($${this.tradingParams.positionSizeUSD})`);
+src\botController.ts:300: this.tradingParams.positionSizeUSD = currentSession.positionSizeUSD;
+src\botController.ts:301: this.tradingParams.positionSizeSOL = convertUSDToSOL(
+src\botController.ts:302: currentSession.positionSizeUSD,
+src\botController.ts:306: console.log(`🔄 Position sizing updated: $${this.tradingParams.positionSizeUSD} = ${this.tradingParams.positionSizeSOL.toFixed(4)} SOL`);
+src\botController.ts:358: this.tradingParams.positionSizeUSD = currentSession.positionSizeUSD;
+src\botController.ts:359: this.tradingParams.positionSizeSOL = convertUSDToSOL(
+src\botController.ts:360: currentSession.positionSizeUSD,
+src\botController.ts:399: this.tradingParams.positionSizeSOL = MASTER_SETTINGS.pool.positionSizeSOL;
+src\botController.ts:544: const baseSize = MASTER_SETTINGS.pool.positionSizeSOL;
+src\botController.ts:700: console.log(`💰 Position Size: $${this.tradingParams.positionSizeUSD} = ${this.tradingParams.positionSizeSOL.toFixed(4)} SOL`);
+src\botController.ts:711: console.log(`💰 Position Size: $${this.tradingParams.positionSizeUSD} = ${this.tradingParams.positionSizeSOL.toFixed(4)} SOL`);
+src\botController.ts:776: return botController.getTradingParams().positionSizeUSD;
+src\botController.ts:780: return botController.getTradingParams().positionSizeSOL;
+src\config.ts:43: sol_amount: MASTER_SETTINGS.pool.positionSizeSOL,
+src\core\AUTO-CONFIG.ts:17: positionSizeUSD: number;
+src\core\AUTO-CONFIG.ts:18: positionSizePercent: number;
+src\core\AUTO-CONFIG.ts:106: config.positionSizeUSD,
+src\core\AUTO-CONFIG.ts:163: const positionSizePercent = Math.min(
+src\core\AUTO-CONFIG.ts:168: const positionSizeUSD = (goals.startingCapital * positionSizePercent) / 100;
+src\core\AUTO-CONFIG.ts:182: Math.floor(goals.startingCapital / positionSizeUSD / 2) // Can hold half the possible positions
+src\core\AUTO-CONFIG.ts:187: positionSizeUSD: Math.round(positionSizeUSD * 100) / 100,
+src\core\AUTO-CONFIG.ts:188: positionSizePercent,
+src\core\AUTO-CONFIG.ts:262: config.positionSizeUSD,
+src\core\AUTO-CONFIG.ts:263: (currentPool * config.positionSizePercent) / 100
+src\core\AUTO-CONFIG.ts:296: positionSizeUSD: Math.round(sessionPositionSize * 100) / 100,
+src\core\AUTO-CONFIG.ts:402: if (config.positionSizePercent > 8) {
+src\core\AUTO-CONFIG.ts:404: } else if (config.positionSizePercent < 2) {
+src\core\AUTO-CONFIG.ts:525: const avgProfitPercent = (avgProfitPerTrade / config.positionSizeUSD) * 100;
+src\core\AUTO-CONFIG.ts:540: summary += `   Position Size: $${config.positionSizeUSD} (${config.positionSizePercent.toFixed(1)}% per trade)\n`;
+src\core\BOT-DIAGNOSTIC.ts:50: console.log(`✓ Position Size should be: $${currentMode ? currentMode.positionSizeUSD : MASTER_SETTINGS.pool.positionSizeUSD}`);
+src\core\BOT-DIAGNOSTIC.ts:82: const positionSize = currentMode ? currentMode.positionSizeUSD : MASTER_SETTINGS.pool.positionSizeUSD;
+src\core\BOT-DIAGNOSTIC.ts:85: const expectedPoolAfter10Trades = initialPool - (positionSize * 10);
+src\core\BOT-DIAGNOSTIC.ts:88: console.log(`Position Size: $${positionSize}`);
+src\core\BOT-DIAGNOSTIC.ts:91: if (positionSize > initialPool * 0.5) {
+src\core\BOT-DIAGNOSTIC.ts:92: this.warnings.push(`Position size ($${positionSize}) is ${((positionSize/initialPool)*100).toFixed(1)}% of initial pool ($${initialPool}) - very high risk!`);
+src\core\BOT-DIAGNOSTIC.ts:95: if (positionSize > initialPool) {
+src\core\BOT-DIAGNOSTIC.ts:96: this.issues.push(`Position size ($${positionSize}) exceeds initial pool ($${initialPool}) - impossible to trade!`);
+src\core\CONFIG-BRIDGE.ts:110: positionSize: POSITION_SIZE,
+src\core\CONFIG-BRIDGE.ts:144: z_positionSize: POSITION_SIZE,
+src\core\CONFIG-BRIDGE.ts:145: z_positionSizeUSD: POSITION_SIZE_USD,
+src\core\CONFIG-BRIDGE.ts:296: positionSize: {
+src\core\CONFIG-HISTORY.ts:8: positionSizeUSD: number;
+src\core\CONFIG-HISTORY.ts:264: const positionSizeAnalysis = this.analyzePositionSizeOptimal(completed);
+src\core\CONFIG-HISTORY.ts:265: if (positionSizeAnalysis) {
+src\core\CONFIG-HISTORY.ts:266: suggestions.push(positionSizeAnalysis);
+src\core\CONFIG-HISTORY.ts:302: s.config.positionSizeUSD >= range.min && s.config.positionSizeUSD < range.max
+src\core\CONFIG-HISTORY.ts:326: const currentPositionSize = currentSession.config.positionSizeUSD;
+src\core\CONFIG-HISTORY.ts:329: parameter: 'positionSizeUSD',
+src\core\CONFIG-HISTORY.ts:572: session.config.positionSizeUSD,
+src\core\CONFIG-WIZARD.ts:12: positionSizePercent: number;
+src\core\CONFIG-WIZARD.ts:19: positionSizeUSD: number;
+src\core\CONFIG-WIZARD.ts:145: this.config.positionSizePercent = 2;
+src\core\CONFIG-WIZARD.ts:149: this.config.positionSizePercent = 4;
+src\core\CONFIG-WIZARD.ts:153: this.config.positionSizePercent = 7;
+src\core\CONFIG-WIZARD.ts:160: console.log(`✅ Risk tolerance: ${this.config.riskTolerance} (${this.config.positionSizePercent}% per trade)\n`);
+src\core\CONFIG-WIZARD.ts:262: const positionSizeUSD = (currentPool * config.positionSizePercent) / 100;
+src\core\CONFIG-WIZARD.ts:267: case 'low': maxTrades = Math.min(50, Math.floor(currentPool / positionSizeUSD)); break;
+src\core\CONFIG-WIZARD.ts:268: case 'medium': maxTrades = Math.min(75, Math.floor(currentPool / positionSizeUSD)); break;
+src\core\CONFIG-WIZARD.ts:269: case 'high': maxTrades = Math.min(100, Math.floor(currentPool / positionSizeUSD)); break;
+src\core\CONFIG-WIZARD.ts:286: positionSizeUSD: Math.round(positionSizeUSD * 100) / 100,
+src\core\CONFIG-WIZARD.ts:305: const maxPositionSize = Math.max(...sessions.map(s => s.positionSizeUSD));
+src\core\CONFIG-WIZARD.ts:314: positionSizeUSD: sessions[0].positionSizeUSD, // Use first session's position size
+src\core\CONFIG-WIZARD.ts:341: config.positionSizeUSD,
+src\core\CONFIG-WIZARD.ts:360: console.log(`   💵 Position Size: $${session.positionSizeUSD} (${((session.positionSizeUSD / session.initialPool) * 100).toFixed(1)}% of pool)`);
+src\core\CONFIG-WIZARD.ts:401: const avgPositionPercent = (config.positionSizeUSD / config.initialPool) * 100;
+src\core\PRE-FLIGHT-CHECK.ts:25: positionSizeUSD: number;
+src\core\PRE-FLIGHT-CHECK.ts:77: if (!this.config.positionSizeUSD || this.config.positionSizeUSD <= 0) {
+src\core\PRE-FLIGHT-CHECK.ts:143: const requiredForTrading = this.config.positionSizeUSD * 2; // At least 2 trades worth
+src\core\PRE-FLIGHT-CHECK.ts:246: const tradesPerPool = Math.floor(this.config.initialPool / this.config.positionSizeUSD);
+src\core\PRE-FLIGHT-CHECK.ts:273: const positionPercent = (this.config.positionSizeUSD / this.config.initialPool) * 100;
+src\core\PRE-FLIGHT-CHECK.ts:295: const maxConcurrentValue = this.config.positionSizeUSD * this.config.maxPositions;
+src\core\PRE-FLIGHT-CHECK.ts:326: const maxTrades = Math.floor(this.config.initialPool / this.config.positionSizeUSD);
+src\core\PRE-FLIGHT-CHECK.ts:376: if (this.config.positionSizeUSD / this.config.initialPool <= 0.1) {
+src\core\SMART-CONFIG-SYSTEM.ts:35: positionSizeUSD: number;
+src\core\SMART-CONFIG-SYSTEM.ts:208: const positionSizeUSD = config.positionSizeUSD;
+src\core\SMART-CONFIG-SYSTEM.ts:216: positionSizeUSD,
+src\core\SMART-CONFIG-SYSTEM.ts:267: positionSizeUSD: config.positionSizeUSD,
+src\core\SMART-CONFIG-SYSTEM.ts:297: positionSizeUSD: config.positionSizeUSD,
+src\core\SMART-CONFIG-SYSTEM.ts:320: positionSizeUSD: config.positionSizeUSD,
+src\core\SMART-CONFIG-SYSTEM.ts:397: positionSizeUSD: ${update.globalLimits.positionSizeUSD},
+src\core\SMART-CONFIG-SYSTEM.ts:479: console.log(`   Position Size: $${result.config.positionSizeUSD}`);
+src\core\SMART-CONFIG-VALIDATOR.ts:24: positionSizeUSD: number,
+src\core\SMART-CONFIG-VALIDATOR.ts:34: results.push(this.validatePoolMath(positionSizeUSD, maxPositions, initialPool));
+src\core\SMART-CONFIG-VALIDATOR.ts:45: results.push(this.validatePositionSizing(positionSizeUSD, initialPool));
+src\core\SMART-CONFIG-VALIDATOR.ts:84: private static validatePoolMath(positionSizeUSD: number, maxPositions: number, initialPool: number): ValidationResult {
+src\core\SMART-CONFIG-VALIDATOR.ts:85: const maxExposure = positionSizeUSD * maxPositions;
+src\core\SMART-CONFIG-VALIDATOR.ts:96: message: `❌ Pool Math: INVALID - Position size $${positionSizeUSD} * ${maxPositions} positions = $${maxExposure} but pool only $${initialPool}`,
+src\core\SMART-CONFIG-VALIDATOR.ts:130: const maxPossibleTrades = Math.floor(session.initialPool / session.positionSizeUSD);
+src\core\SMART-CONFIG-VALIDATOR.ts:141: message: `❌ Session ${sessionNum}: INFEASIBLE - Need ${session.maxTrades} trades but pool $${session.initialPool} only supports ${maxPossibleTrades} trades at $${session.positionSizeUSD} each`,
+src\core\SMART-CONFIG-VALIDATOR.ts:147: private static validatePositionSizing(positionSizeUSD: number, initialPool: number): ValidationResult {
+src\core\SMART-CONFIG-VALIDATOR.ts:148: const positionPercent = (positionSizeUSD / initialPool) * 100;
+src\core\SMART-CONFIG-VALIDATOR.ts:253: const avgTradeProfitPercent = (avgTradeProfit / session.positionSizeUSD) * 100;
+src\core\SMART-CONFIG-VALIDATOR.ts:319: positionSizeUSD: number;
+src\core\SMART-CONFIG-VALIDATOR.ts:324: config.positionSizeUSD > 0 &&
+src\core\SMART-CONFIG-VALIDATOR.ts:325: config.initialPool > config.positionSizeUSD &&
+src\core\SMART-CONFIG-VALIDATOR.ts:326: config.positionSizeUSD <= config.initialPool * 0.1 // Max 10% per trade
+src\core\UNIFIED-CONTROL.ts:29: positionSizeSOL: 0.06865,     // Tiny amounts
+src\core\UNIFIED-CONTROL.ts:30: positionSizeUSD: 15,       // ~$0.002
+src\core\UNIFIED-CONTROL.ts:39: positionSizeSOL: 0.0006866,       // $0.15 per trade
+src\core\UNIFIED-CONTROL.ts:40: positionSizeUSD: 0.15,
+src\core\UNIFIED-CONTROL.ts:49: positionSizeSOL: 0.0009,     // Your original z-masterConfig setting
+src\core\UNIFIED-CONTROL.ts:50: positionSizeUSD: 0.2,        // Your intended amount
+src\core\UNIFIED-CONTROL.ts:59: positionSizeSOL: 0.06866,       // Larger production amounts
+src\core\UNIFIED-CONTROL.ts:60: positionSizeUSD: 15,          // ~$15 per trade
+src\core\UNIFIED-CONTROL.ts:81: positionSizeUSD: number;
+src\core\UNIFIED-CONTROL.ts:95: const basePositionSize = MODE_PRESETS[currentMode].positionSizeUSD;
+src\core\UNIFIED-CONTROL.ts:105: positionSizeUSD: basePositionSize,  // ← Use mode preset instead of hardcoded 20
+src\core\UNIFIED-CONTROL.ts:129: positionSizeUSD: basePositionSize * 2.25,  // ← Scale from base (was 45, now 15 * 2.25 = 33.75)
+src\core\UNIFIED-CONTROL.ts:152: positionSizeUSD: basePositionSize * 5,  // ← Scale from base (was 100, now 15 * 5 = 75)
+src\core\UNIFIED-CONTROL.ts:175: positionSizeUSD: basePositionSize * 10,  // ← Scale from base (was 200, now 15 * 10 = 150)
+src\core\UNIFIED-CONTROL.ts:212: // - You set positionSize to 0.00089 SOL ($0.21) in z-masterConfig
+src\core\UNIFIED-CONTROL.ts:247: setting: 'positionSize',
+src\core\UNIFIED-CONTROL.ts:320: positionSizeSOL: MODE_PRESETS[TradingMode.PAPER].positionSizeSOL,   // ← Now dynamically references MODE_PRESETS
+src\core\UNIFIED-CONTROL.ts:321: positionSizeUSD: MODE_PRESETS[TradingMode.PAPER].positionSizeUSD,   // ← Now dynamically references MODE_PRESETS
+src\core\UNIFIED-CONTROL.ts:615: this.setValue('pool.positionSizeSOL', preset.positionSizeSOL, requestedBy, true);
+src\core\UNIFIED-CONTROL.ts:616: this.setValue('pool.positionSizeUSD', preset.positionSizeUSD, requestedBy, true);
+src\core\UNIFIED-CONTROL.ts:621: console.log(`   Position Size: ${preset.positionSizeUSD} USD (${preset.positionSizeSOL} SOL)`);
+src\core\UNIFIED-CONTROL.ts:649: const positionSize = MASTER_SETTINGS.pool.positionSizeUSD;
+src\core\UNIFIED-CONTROL.ts:652: if (positionSize > poolSize * maxPercent) {
+src\core\UNIFIED-CONTROL.ts:653: errors.push(`Position size too large: ${positionSize} > ${maxPercent * 100}% of ${poolSize}`);
+src\core\UNIFIED-CONTROL.ts:703: if (pool.positionSizeUSD > pool.initialPool * 0.1) {
+src\core\UNIFIED-CONTROL.ts:704: errors.push(`Position size ${pool.positionSizeUSD} exceeds 10% of pool ${pool.initialPool}`);
+src\core\UNIFIED-CONTROL.ts:707: if (pool.positionSizeSOL > 1) {
+src\core\UNIFIED-CONTROL.ts:708: warnings.push(`Large position size: ${pool.positionSizeSOL} SOL`);
+src\core\UNIFIED-CONTROL.ts:783: console.log(`   Position Size: $${MASTER_SETTINGS.pool.positionSizeUSD} (${MASTER_SETTINGS.pool.positionSizeSOL} SOL)`);
+src\core\UNIFIED-CONTROL.ts:800: export const getPositionSizeSOL = () => enforcer.getValue('pool.positionSizeSOL', 'getPositionSizeSOL');
+src\core\UNIFIED-CONTROL.ts:801: export const getPositionSizeUSD = () => enforcer.getValue('pool.positionSizeUSD', 'getPositionSizeUSD');
+src\enhanced\masterConfig.ts:50: positionSize: number;          // SOL per trade
+src\enhanced\masterConfig.ts:54: positionSizePercent: number;   // % of pool per position
+src\enhanced\masterConfig.ts:364: positionSize: 0.089,           // ~$40 at current SOL price
+src\enhanced\masterConfig.ts:368: positionSizePercent: 3,        // 5% of pool per position
+src\enhanced\masterConfig.ts:651: if (cfg.pool.positionSizePercent > cfg.pool.maxPoolRisk) {
+src\enhanced\token-detection-test.ts:13: console.log(`Position Size: ${MASTER_SETTINGS.pool.positionSize} SOL`);
+src\enhanced\token-detection-test.ts:34: positionSize: MASTER_SETTINGS.pool.positionSize,
+src\enhanced\token-detection-test.ts:90: const estimatedPositionUSD = config.positionSize * 170; // Assuming ~$170 per SOL
+src\enhanced\token-detection-test.ts:119: console.log(`   Position Size: ${config.positionSize} SOL (~$${estimatedPositionUSD.toFixed(2)})`);
+src\enhanced\token-detection-test.ts:157: positionSize: config.positionSize,
+src\enhanced\token-detection-test.ts:421: const maxBasicTrades = Math.floor(config.initialPool / (config.positionSize * 170));
+src\enhanced\token-detection-test.ts:492: const maxBasicTrades = Math.floor(config.initialPool / (config.positionSize * 170));
+src\enhanced\token-queue-system-8.13-bleeding.ts:53: private positionSize: number; // USD per trade
+src\enhanced\token-queue-system-8.13-bleeding.ts:54: private positionSizeSOL: number; // SOL equivalent
+src\enhanced\token-queue-system-8.13-bleeding.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\enhanced\token-queue-system-8.13-bleeding.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:67: this.positionSize = positionSizeUSD;
+src\enhanced\token-queue-system-8.13-bleeding.ts:68: this.positionSizeSOL = positionSizeUSD / 170; // Using ~$170 per SOL
+src\enhanced\token-queue-system-8.13-bleeding.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:78: return this.currentPool >= this.positionSize;
+src\enhanced\token-queue-system-8.13-bleeding.ts:84: console.log(`💸 Current pool: $${this.currentPool.toFixed(2)} | Need: $${this.positionSize}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:89: this.currentPool -= this.positionSize;
+src\enhanced\token-queue-system-8.13-bleeding.ts:94: this.logPoolTransaction('trade_execution', -this.positionSize,
+src\enhanced\token-queue-system-8.13-bleeding.ts:108: const dollarPnL = (this.positionSize * profitPercentage) / 100;
+src\enhanced\token-queue-system-8.13-bleeding.ts:112: this.currentPool += this.positionSize + dollarPnL;
+src\enhanced\token-queue-system-8.13-bleeding.ts:124: this.logPoolTransaction(transactionType, this.positionSize + dollarPnL,
+src\enhanced\token-queue-system-8.13-bleeding.ts:138: if (this.currentPool >= milestone && (this.currentPool - this.positionSize - (this.totalPnL / Math.max(this.totalTrades, 1))) < milestone) {
+src\enhanced\token-queue-system-8.13-bleeding.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system-8.13-bleeding.ts:169: console.log(`💸 Position Size: $${this.positionSize} (${this.positionSizeSOL.toFixed(4)} SOL)`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:207: console.log(`💸 Position Size Used: $${this.positionSize}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system-8.13-bleeding.ts:243: poolBefore: type === 'trade_execution' ? this.currentPool + this.positionSize : this.currentPool - amount,
+src\enhanced\token-queue-system-8.13-bleeding.ts:327: console.log(`🔍 DEBUG: TokenQueueManager received config:`, config?.positionSizeUSD || 'not set');
+src\enhanced\token-queue-system-8.13-bleeding.ts:335: const positionSizeUSD = config?.positionSizeUSD || (config?.positionSize ? config.positionSize * 170 : 15);
+src\enhanced\token-queue-system-8.13-bleeding.ts:336: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:338: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\enhanced\token-queue-system-8.13-bleeding.ts:485: console.log(`   💰 Using position size: $${this.config?.positionSizeUSD || 15}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:511: console.log(`   ✅ BOUGHT: $${this.config?.positionSizeUSD || 15} position @ $${entryPrice.toFixed(6)}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:542: this.logTradingAction(token, 'immediate_buy', this.config?.positionSizeUSD || 15, entryPrice);
+src\enhanced\token-queue-system.backup.ts:53: private positionSize: number; // USD per trade
+src\enhanced\token-queue-system.backup.ts:54: private positionSizeSOL: number; // SOL equivalent
+src\enhanced\token-queue-system.backup.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\enhanced\token-queue-system.backup.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.backup.ts:67: this.positionSize = positionSizeUSD;
+src\enhanced\token-queue-system.backup.ts:68: this.positionSizeSOL = positionSizeUSD / 170; // Using ~$170 per SOL
+src\enhanced\token-queue-system.backup.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\enhanced\token-queue-system.backup.ts:78: return this.currentPool >= this.positionSize;
+src\enhanced\token-queue-system.backup.ts:84: console.log(`💸 Current pool: $${this.currentPool.toFixed(2)} | Need: $${this.positionSize}`);
+src\enhanced\token-queue-system.backup.ts:89: this.currentPool -= this.positionSize;
+src\enhanced\token-queue-system.backup.ts:94: this.logPoolTransaction('trade_execution', -this.positionSize,
+src\enhanced\token-queue-system.backup.ts:108: const dollarPnL = (this.positionSize * profitPercentage) / 100;
+src\enhanced\token-queue-system.backup.ts:112: this.currentPool += this.positionSize + dollarPnL;
+src\enhanced\token-queue-system.backup.ts:124: this.logPoolTransaction(transactionType, this.positionSize + dollarPnL,
+src\enhanced\token-queue-system.backup.ts:138: if (this.currentPool >= milestone && (this.currentPool - this.positionSize - (this.totalPnL / Math.max(this.totalTrades, 1))) < milestone) {
+src\enhanced\token-queue-system.backup.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.backup.ts:169: console.log(`💸 Position Size: $${this.positionSize} (${this.positionSizeSOL.toFixed(4)} SOL)`);
+src\enhanced\token-queue-system.backup.ts:207: console.log(`💸 Position Size Used: $${this.positionSize}`);
+src\enhanced\token-queue-system.backup.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\enhanced\token-queue-system.backup.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\enhanced\token-queue-system.backup.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.backup.ts:243: poolBefore: type === 'trade_execution' ? this.currentPool + this.positionSize : this.currentPool - amount,
+src\enhanced\token-queue-system.backup.ts:327: console.log(`🔍 DEBUG: TokenQueueManager received config:`, config?.positionSizeUSD || 'not set');
+src\enhanced\token-queue-system.backup.ts:335: const positionSizeUSD = config?.positionSizeUSD || (config?.positionSize ? config.positionSize * 170 : 15);
+src\enhanced\token-queue-system.backup.ts:336: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.backup.ts:338: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\enhanced\token-queue-system.backup.ts:485: console.log(`   💰 Using position size: $${this.config?.positionSizeUSD || 15}`);
+src\enhanced\token-queue-system.backup.ts:511: console.log(`   ✅ BOUGHT: $${this.config?.positionSizeUSD || 15} position @ $${entryPrice.toFixed(6)}`);
+src\enhanced\token-queue-system.backup.ts:542: this.logTradingAction(token, 'immediate_buy', this.config?.positionSizeUSD || 15, entryPrice);
+src\enhanced\token-queue-system.ts:53: private positionSize: number; // USD per trade
+src\enhanced\token-queue-system.ts:54: private positionSizeSOL: number; // SOL equivalent
+src\enhanced\token-queue-system.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\enhanced\token-queue-system.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.ts:67: this.positionSize = positionSizeUSD;
+src\enhanced\token-queue-system.ts:68: this.positionSizeSOL = positionSizeUSD / 170; // Using ~$170 per SOL
+src\enhanced\token-queue-system.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\enhanced\token-queue-system.ts:78: return this.currentPool >= this.positionSize;
+src\enhanced\token-queue-system.ts:84: console.log(`💸 Current pool: $${this.currentPool.toFixed(2)} | Need: $${this.positionSize}`);
+src\enhanced\token-queue-system.ts:89: this.currentPool -= this.positionSize;
+src\enhanced\token-queue-system.ts:94: this.logPoolTransaction('trade_execution', -this.positionSize,
+src\enhanced\token-queue-system.ts:108: const dollarPnL = (this.positionSize * profitPercentage) / 100;
+src\enhanced\token-queue-system.ts:112: this.currentPool += this.positionSize + dollarPnL;
+src\enhanced\token-queue-system.ts:124: this.logPoolTransaction(transactionType, this.positionSize + dollarPnL,
+src\enhanced\token-queue-system.ts:138: if (this.currentPool >= milestone && (this.currentPool - this.positionSize - (this.totalPnL / Math.max(this.totalTrades, 1))) < milestone) {
+src\enhanced\token-queue-system.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.ts:169: console.log(`💸 Position Size: $${this.positionSize} (${this.positionSizeSOL.toFixed(4)} SOL)`);
+src\enhanced\token-queue-system.ts:207: console.log(`💸 Position Size Used: $${this.positionSize}`);
+src\enhanced\token-queue-system.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\enhanced\token-queue-system.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\enhanced\token-queue-system.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.ts:243: poolBefore: type === 'trade_execution' ? this.currentPool + this.positionSize : this.currentPool - amount,
+src\enhanced\token-queue-system.ts:329: console.log(`🔍 DEBUG: TokenQueueManager received config:`, config?.positionSizeUSD || 'not set');
+src\enhanced\token-queue-system.ts:337: const positionSizeUSD = config?.positionSizeUSD || (config?.positionSize ? config.positionSize * 170 : 15);
+src\enhanced\token-queue-system.ts:338: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.ts:340: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\enhanced\token-queue-system.ts:504: console.log(`   💰 Using position size: $${this.config?.positionSizeUSD || 15}`);
+src\enhanced\token-queue-system.ts:530: console.log(`   ✅ BOUGHT: $${this.config?.positionSizeUSD || 15} position @ $${entryPrice.toFixed(6)}`);
+src\enhanced\token-queue-system.ts:561: this.logTradingAction(token, 'immediate_buy', this.config?.positionSizeUSD || 15, entryPrice);
+src\index.ts:834: const positionSize = POSITION_SIZE;
+src\index.ts:841: positionSize: positionSize,
+src\index.ts:842: positionSizeUSD: positionSize * 170,
+src\index.ts:870: console.log(`📊 Position Size: ${positionSize} SOL ($${(positionSize * 170).toFixed(2)})`);
+src\secure-pool-system.ts:26: positionSizeUSD: number;     // USD per trade
+src\secure-pool-system.ts:38: positionSizeUSD: session.positionSizeUSD
+src\secure-pool-system.ts:119: const configPositionSOL = MASTER_SETTINGS.pool.positionSizeSOL;
+src\secure-pool-system.ts:221: console.log(`   New Position Size: $${currentSecureSession.positionSizeUSD} (${(currentSecureSession.positionSizeUSD / currentSOLPrice).toFixed(4)} SOL)`);
+src\secure-pool-system.ts:224: poolManager.positionSize = currentSecureSession.positionSizeUSD;
+src\secure-pool-system.ts:225: poolManager.positionSizeSOL = currentSecureSession.positionSizeUSD / currentSOLPrice;
+src\secure-pool-system.ts:251: console.log(`   Position Size: $${currentSecureSession.positionSizeUSD} (${solPositionSize} SOL)`);
+src\secure-pool-system.ts:292: console.log(`   Position Size: $${currentSecureSession.positionSizeUSD}`);
+src\test-config.js:11: console.log('Position Size:', masterConfig.pool?.positionSize);
+src\test-session-fix.ts:22: console.log(`  Position Size: $${session.positionSizeUSD}`);
+src\test-session-fix.ts:43: console.log(`Session ${session.sessionNumber}: $${session.positionSizeUSD} USD`);```
+
+**z_positionSize** found in:
+
+```
+src\core\CONFIG-BRIDGE.ts:144: z_positionSize: POSITION_SIZE,
+src\core\CONFIG-BRIDGE.ts:145: z_positionSizeUSD: POSITION_SIZE_USD,```
+
+**initialPool** found in:
+
+```
+src\advanced-features.ts:15: initialPool: number;
+src\advanced-features.ts:65: initialPool: 1000, // Default $1000 per wallet
+src\advanced-features.ts:95: console.log(`💰 Initial Pool: $${availableWallet.initialPool}`);
+src\advanced-features.ts:108: wallet.totalProfit = wallet.currentPool - wallet.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\configBridge.ts:8: export const INITIAL_POOL = config.pool?.initialPool || 85;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:67: const KEEP_TRADING_AMOUNT = sessionInfo.initialPool;             // Keep initial pool amount
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:86: initialPool: number;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:96: initialPool: 1000,     // Start with $1,000
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:104: initialPool: 2100,     // Start with $2,100
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:112: initialPool: 4000,     // Start with $4,000
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:120: initialPool: 8000,     // Start with $8,000
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:137: function calculateGrossTarget(netTarget: number, initialPool: number, reinvestmentRate: number): number {
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:139: const netProfit = netTarget - initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:144: const grossNeeded = initialPool + netProfit + taxes + nextSession + fees;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:147: console.log(`   Initial Pool: $${initialPool.toLocaleString()}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:182: initialPool: masterConfig?.pool?.initialPool,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:422: console.log(`   Initial Pool: $${sessionInfo.initialPool.toLocaleString()}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:428: console.log(`   - Initial: $${sessionInfo.initialPool.toLocaleString()}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:446: initialPool: sessionInfo.initialPool,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:466: console.log(`   Initial Pool: $${nextSession.initialPool.toLocaleString()}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:469: console.log(`   Growth Needed: ${(nextSession.grossTarget / nextSession.initialPool).toFixed(1)}x`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:485: poolManager.currentPool = nextSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:486: poolManager.initialPool = nextSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:500: masterConfig.pool.initialPool = nextSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:519: Initial Pool: $${walletRecord.initialPool.toLocaleString()}
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:526: Growth Achieved: ${(walletRecord.finalPool / walletRecord.initialPool).toFixed(2)}x
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:573: const initialPool = currentSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:580: initialPool,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:609: console.log(`💰 Initial Pool: $${initialPool.toLocaleString()}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1100: poolManager.currentPool = currentSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1101: poolManager.initialPool = poolManager.currentPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1121: poolManager.totalPnL = poolManager.currentPool - poolManager.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1278: poolManager.currentPool = currentSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1296: const currentPool = poolManager.currentPool || currentSession.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1301: console.log(`   Initial: $${currentSession.initialPool.toLocaleString()}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1320: console.log(`   Session ${nextSession.sessionNumber}: $${nextSession.initialPool.toLocaleString()} → $${nextSession.targetPool.toLocaleString()} target`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1424: console.log(`   Initial: $${currentSession.initialPool.toFixed(2)}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1451: grandTotalInitial += session.initialPool || 0;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1462: grandTotalInitial += currentSession.initialPool || 0;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:31: initialPool: number;           // Starting capital in USD
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:345: initialPool: 600,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:634: if (cfg.pool.initialPool <= 0) {
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:693: console.log(`Initial Pool: $${config.pool.initialPool}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:51: private initialPool: number;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:65: this.initialPool = initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:66: this.currentPool = initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:69: this.maxPool = initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:70: this.minPool = initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:113: this.totalPnL = this.currentPool - this.initialPool;   // CORRECT
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:189: const growthMultiplier = this.currentPool / this.initialPool;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:195: console.log(`💰 Initial Pool: $${this.initialPool.toFixed(2)}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:197: console.log(`📈 Total Growth: $${(this.currentPool - this.initialPool).toFixed(2)} (${roi.toFixed(2)}%)`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:226: return ((this.currentPool - this.initialPool) / this.initialPool) * 100;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:263: initialPool: this.initialPool,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:325: initialPool: number,  // NO DEFAULT VALUE
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:328: console.log(`🔍 DEBUG: TokenQueueManager received initialPool: $${initialPool}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:338: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\token-queue-system.ts:340: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\botController.ts:35: initialPool: number;
+src\botController.ts:127: const grossProfit = session.targetPool - session.initialPool;
+src\botController.ts:153: // Check if next session's initialPool matches this session's nextSessionPool
+src\botController.ts:156: if (nextSession.initialPool !== session.nextSessionPool) {
+src\botController.ts:157: console.error(`  ❌ Session ${nextSession.sessionNumber} initialPool (${nextSession.initialPool}) doesn't match Session ${session.sessionNumber} nextSessionPool (${session.nextSessionPool})`);
+src\botController.ts:369: session.profitRequired = session.targetPool - session.initialPool;
+src\botController.ts:370: session.growthMultiplier = session.targetPool / session.initialPool;
+src\botController.ts:375: this.sessionProgression[i + 1].initialPool = session.nextSessionPool;
+src\botController.ts:568: if (session.initialPool <= 0) {
+src\botController.ts:572: if (session.targetPool <= session.initialPool) {
+src\botController.ts:694: console.log(`💰 Pool: $${currentSession.initialPool.toLocaleString()} → $${currentSession.targetPool.toLocaleString()}`);
+src\botController.ts:709: console.log(`💰 New Pool: $${currentSession.initialPool.toLocaleString()} → $${currentSession.targetPool.toLocaleString()}`);
+src\core\AUTO-CONFIG.ts:16: initialPool: number;
+src\core\AUTO-CONFIG.ts:108: config.initialPool
+src\core\AUTO-CONFIG.ts:186: initialPool: goals.startingCapital,
+src\core\AUTO-CONFIG.ts:291: initialPool: Math.round(currentPool * 100) / 100,
+src\core\AUTO-CONFIG.ts:524: const avgProfitPerTrade = (targetProfit - config.initialPool) / config.maxTrades;
+src\core\AUTO-CONFIG.ts:539: summary += `   Initial Pool: $${config.initialPool.toLocaleString()}\n`;
+src\core\AUTO-CONFIG.ts:546: summary += `   Session ${index + 1}: $${session.initialPool.toLocaleString()} → $${session.targetPool.toLocaleString()} (${session.growthMultiplier}x)\n`;
+src\core\BOT-DIAGNOSTIC.ts:35: const expectedInitialPool = MASTER_SETTINGS.pool.initialPool;
+src\core\BOT-DIAGNOSTIC.ts:43: if (monitorConfig.initialPool !== expectedInitialPool) {
+src\core\BOT-DIAGNOSTIC.ts:44: this.issues.push(`Initial Pool Mismatch: Expected ${expectedInitialPool}, Monitor shows ${monitorConfig.initialPool}`);
+src\core\BOT-DIAGNOSTIC.ts:80: const initialPool = MASTER_SETTINGS.pool.initialPool;
+src\core\BOT-DIAGNOSTIC.ts:85: const expectedPoolAfter10Trades = initialPool - (positionSize * 10);
+src\core\BOT-DIAGNOSTIC.ts:87: console.log(`Initial Pool: $${initialPool}`);
+src\core\BOT-DIAGNOSTIC.ts:91: if (positionSize > initialPool * 0.5) {
+src\core\BOT-DIAGNOSTIC.ts:92: this.warnings.push(`Position size ($${positionSize}) is ${((positionSize/initialPool)*100).toFixed(1)}% of initial pool ($${initialPool}) - very high risk!`);
+src\core\BOT-DIAGNOSTIC.ts:95: if (positionSize > initialPool) {
+src\core\BOT-DIAGNOSTIC.ts:96: this.issues.push(`Position size ($${positionSize}) exceeds initial pool ($${initialPool}) - impossible to trade!`);
+src\core\CONFIG-BRIDGE.ts:107: initialPool: INITIAL_POOL,
+src\core\CONFIG-BRIDGE.ts:142: z_initialPool: INITIAL_POOL,
+src\core\CONFIG-HISTORY.ts:6: initialPool: number;
+src\core\CONFIG-HISTORY.ts:571: session.config.initialPool,
+src\core\CONFIG-WIZARD.ts:21: initialPool: number;
+src\core\CONFIG-WIZARD.ts:281: initialPool: Math.round(currentPool * 100) / 100,
+src\core\CONFIG-WIZARD.ts:316: initialPool: config.startingPool
+src\core\CONFIG-WIZARD.ts:343: config.initialPool
+src\core\CONFIG-WIZARD.ts:357: console.log(`   💰 Start Pool: $${session.initialPool.toLocaleString()}`);
+src\core\CONFIG-WIZARD.ts:360: console.log(`   💵 Position Size: $${session.positionSizeUSD} (${((session.positionSizeUSD / session.initialPool) * 100).toFixed(1)}% of pool)`);
+src\core\CONFIG-WIZARD.ts:374: console.log(`   💰 Starting Capital: $${config.initialPool.toLocaleString()}`);
+src\core\CONFIG-WIZARD.ts:376: const totalTargetGrowth = config.sessions[config.sessions.length - 1].targetPool / config.initialPool;
+src\core\CONFIG-WIZARD.ts:378: console.log(`   📊 Overall Growth: ${totalTargetGrowth.toFixed(1)}x ($${config.initialPool.toLocaleString()} → $${config.sessions[config.sessions.length - 1].targetPool.toLocaleString()})`);
+src\core\CONFIG-WIZARD.ts:386: config.sessions[config.sessions.length - 1].targetPool / config.initialPool,
+src\core\CONFIG-WIZARD.ts:401: const avgPositionPercent = (config.positionSizeUSD / config.initialPool) * 100;
+src\core\PRE-FLIGHT-CHECK.ts:24: initialPool: number;
+src\core\PRE-FLIGHT-CHECK.ts:73: if (!this.config.initialPool || this.config.initialPool <= 0) {
+src\core\PRE-FLIGHT-CHECK.ts:156: if (balanceUSD < this.config.initialPool) {
+src\core\PRE-FLIGHT-CHECK.ts:160: message: `Balance $${balanceUSD.toFixed(2)} less than configured pool $${this.config.initialPool}`,
+src\core\PRE-FLIGHT-CHECK.ts:246: const tradesPerPool = Math.floor(this.config.initialPool / this.config.positionSizeUSD);
+src\core\PRE-FLIGHT-CHECK.ts:273: const positionPercent = (this.config.positionSizeUSD / this.config.initialPool) * 100;
+src\core\PRE-FLIGHT-CHECK.ts:296: if (maxConcurrentValue > this.config.initialPool) {
+src\core\PRE-FLIGHT-CHECK.ts:300: message: `Max concurrent exposure $${maxConcurrentValue} > pool $${this.config.initialPool}`,
+src\core\PRE-FLIGHT-CHECK.ts:326: const maxTrades = Math.floor(this.config.initialPool / this.config.positionSizeUSD);
+src\core\PRE-FLIGHT-CHECK.ts:333: message: `Cannot execute ${this.config.maxTradesPerSession} trades with $${this.config.initialPool} pool`,
+src\core\PRE-FLIGHT-CHECK.ts:376: if (this.config.positionSizeUSD / this.config.initialPool <= 0.1) {
+src\core\SMART-CONFIG-SYSTEM.ts:36: initialPool: number;
+src\core\SMART-CONFIG-SYSTEM.ts:210: const initialPool = config.initialPool;
+src\core\SMART-CONFIG-SYSTEM.ts:218: initialPool
+src\core\SMART-CONFIG-SYSTEM.ts:266: initialPool: config.initialPool,
+src\core\SMART-CONFIG-SYSTEM.ts:293: initialPool: config.initialPool,
+src\core\SMART-CONFIG-SYSTEM.ts:296: : config.initialPool * 2,
+src\core\SMART-CONFIG-SYSTEM.ts:321: initialPool: config.initialPool
+src\core\SMART-CONFIG-SYSTEM.ts:398: initialPool: ${update.globalLimits.initialPool}
+src\core\SMART-CONFIG-SYSTEM.ts:478: console.log(`   Initial Pool: $${result.config.initialPool.toLocaleString()}`);
+src\core\SMART-CONFIG-VALIDATOR.ts:26: initialPool: number
+src\core\SMART-CONFIG-VALIDATOR.ts:34: results.push(this.validatePoolMath(positionSizeUSD, maxPositions, initialPool));
+src\core\SMART-CONFIG-VALIDATOR.ts:45: results.push(this.validatePositionSizing(positionSizeUSD, initialPool));
+src\core\SMART-CONFIG-VALIDATOR.ts:84: private static validatePoolMath(positionSizeUSD: number, maxPositions: number, initialPool: number): ValidationResult {
+src\core\SMART-CONFIG-VALIDATOR.ts:87: if (maxExposure <= initialPool) {
+src\core\SMART-CONFIG-VALIDATOR.ts:90: message: `✅ Pool Math: Valid - Max exposure $${maxExposure} within pool $${initialPool}`,
+src\core\SMART-CONFIG-VALIDATOR.ts:96: message: `❌ Pool Math: INVALID - Position size $${positionSizeUSD} * ${maxPositions} positions = $${maxExposure} but pool only $${initialPool}`,
+src\core\SMART-CONFIG-VALIDATOR.ts:130: const maxPossibleTrades = Math.floor(session.initialPool / session.positionSizeUSD);
+src\core\SMART-CONFIG-VALIDATOR.ts:135: message: `✅ Session ${sessionNum}: Feasible (${session.maxTrades} trades possible with $${session.initialPool} pool)`,
+src\core\SMART-CONFIG-VALIDATOR.ts:141: message: `❌ Session ${sessionNum}: INFEASIBLE - Need ${session.maxTrades} trades but pool $${session.initialPool} only supports ${maxPossibleTrades} trades at $${session.positionSizeUSD} each`,
+src\core\SMART-CONFIG-VALIDATOR.ts:147: private static validatePositionSizing(positionSizeUSD: number, initialPool: number): ValidationResult {
+src\core\SMART-CONFIG-VALIDATOR.ts:148: const positionPercent = (positionSizeUSD / initialPool) * 100;
+src\core\SMART-CONFIG-VALIDATOR.ts:180: const diff = Math.abs(currentSession.initialPool - prevSession.nextSessionPool);
+src\core\SMART-CONFIG-VALIDATOR.ts:183: errors.push(`Session ${i + 1} starts with $${currentSession.initialPool} but Session ${i} ends with $${prevSession.nextSessionPool}`);
+src\core\SMART-CONFIG-VALIDATOR.ts:320: initialPool: number;
+src\core\SMART-CONFIG-VALIDATOR.ts:325: config.initialPool > config.positionSizeUSD &&
+src\core\SMART-CONFIG-VALIDATOR.ts:326: config.positionSizeUSD <= config.initialPool * 0.1 // Max 10% per trade
+src\core\SMART-CONFIG-VALIDATOR.ts:337: if (session.targetPool <= session.initialPool) {
+src\core\SMART-CONFIG-VALIDATOR.ts:340: message: `❌ Target pool ($${session.targetPool}) must be greater than initial pool ($${session.initialPool})`,
+src\core\SMART-CONFIG-VALIDATOR.ts:345: if (session.profitRequired !== (session.targetPool - session.initialPool)) {
+src\core\SMART-CONFIG-VALIDATOR.ts:348: message: `❌ Profit required ($${session.profitRequired}) doesn't match target - initial ($${session.targetPool - session.initialPool})`,
+src\core\SMART-CONFIG-VALIDATOR.ts:353: if (Math.abs(session.growthMultiplier - (session.targetPool / session.initialPool)) > 0.01) {
+src\core\SMART-CONFIG-VALIDATOR.ts:356: message: `❌ Growth multiplier (${session.growthMultiplier}) doesn't match calculated ratio (${(session.targetPool / session.initialPool).toFixed(2)})`,
+src\core\UNIFIED-CONTROL.ts:76: initialPool: number;
+src\core\UNIFIED-CONTROL.ts:100: initialPool: 600,              // Proven working amount
+src\core\UNIFIED-CONTROL.ts:115: session1.profitRequired = session1.targetPool - session1.initialPool;
+src\core\UNIFIED-CONTROL.ts:116: session1.growthMultiplier = session1.targetPool / session1.initialPool;
+src\core\UNIFIED-CONTROL.ts:124: initialPool: session1.nextSessionPool,
+src\core\UNIFIED-CONTROL.ts:138: session2.profitRequired = session2.targetPool - session2.initialPool;
+src\core\UNIFIED-CONTROL.ts:139: session2.growthMultiplier = session2.targetPool / session2.initialPool;
+src\core\UNIFIED-CONTROL.ts:147: initialPool: session2.nextSessionPool,
+src\core\UNIFIED-CONTROL.ts:161: session3.profitRequired = session3.targetPool - session3.initialPool;
+src\core\UNIFIED-CONTROL.ts:162: session3.growthMultiplier = session3.targetPool / session3.initialPool;
+src\core\UNIFIED-CONTROL.ts:170: initialPool: session3.nextSessionPool,
+src\core\UNIFIED-CONTROL.ts:184: session4.profitRequired = session4.targetPool - session4.initialPool;
+src\core\UNIFIED-CONTROL.ts:185: session4.growthMultiplier = session4.targetPool / session4.initialPool;
+src\core\UNIFIED-CONTROL.ts:317: initialPool: 60,          // Starting amount $600
+src\core\UNIFIED-CONTROL.ts:650: const poolSize = MASTER_SETTINGS.pool.initialPool;
+src\core\UNIFIED-CONTROL.ts:703: if (pool.positionSizeUSD > pool.initialPool * 0.1) {
+src\core\UNIFIED-CONTROL.ts:704: errors.push(`Position size ${pool.positionSizeUSD} exceeds 10% of pool ${pool.initialPool}`);
+src\core\UNIFIED-CONTROL.ts:784: console.log(`   Pool: $${MASTER_SETTINGS.pool.initialPool} → $${MASTER_SETTINGS.pool.targetPoolUSD}`);
+src\core\UNIFIED-CONTROL.ts:802: export const getInitialPool = () => enforcer.getValue('pool.initialPool', 'getInitialPool');
+src\enhanced\masterConfig.ts:43: initialPool: number;           // Starting capital in USD
+src\enhanced\masterConfig.ts:358: initialPool: 600,
+src\enhanced\masterConfig.ts:647: if (cfg.pool.initialPool <= 0) {
+src\enhanced\masterConfig.ts:689: initialPool: config.pool.initialPool,
+src\enhanced\token-detection-test.ts:10: console.log(`Initial Pool: $${MASTER_SETTINGS.pool.initialPool}`);
+src\enhanced\token-detection-test.ts:32: initialPool: MASTER_SETTINGS.pool.initialPool,
+src\enhanced\token-detection-test.ts:102: dailyStartPool: config.initialPool,
+src\enhanced\token-detection-test.ts:117: console.log(`   Initial: $${config.initialPool.toLocaleString()}`);
+src\enhanced\token-detection-test.ts:155: config.initialPool,
+src\enhanced\token-detection-test.ts:208: const dailyLossPercent = ((config.initialPool - poolSummary.currentPool) / config.initialPool) * 100;
+src\enhanced\token-detection-test.ts:421: const maxBasicTrades = Math.floor(config.initialPool / (config.positionSize * 170));
+src\enhanced\token-detection-test.ts:484: console.log(`💰 Initial: $${config.initialPool.toLocaleString()}`);
+src\enhanced\token-detection-test.ts:486: console.log(`📈 Growth: $${(poolSummary.currentPool - config.initialPool).toFixed(2)} (${poolSummary.roi.toFixed(2)}%)`);
+src\enhanced\token-detection-test.ts:492: const maxBasicTrades = Math.floor(config.initialPool / (config.positionSize * 170));
+src\enhanced\token-queue-system-8.13-bleeding.ts:51: private initialPool: number;
+src\enhanced\token-queue-system-8.13-bleeding.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\enhanced\token-queue-system-8.13-bleeding.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:65: this.initialPool = initialPool;
+src\enhanced\token-queue-system-8.13-bleeding.ts:66: this.currentPool = initialPool;
+src\enhanced\token-queue-system-8.13-bleeding.ts:69: this.maxPool = initialPool;
+src\enhanced\token-queue-system-8.13-bleeding.ts:70: this.minPool = initialPool;
+src\enhanced\token-queue-system-8.13-bleeding.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:113: this.totalPnL = this.currentPool - this.initialPool;   // CORRECT
+src\enhanced\token-queue-system-8.13-bleeding.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system-8.13-bleeding.ts:189: const growthMultiplier = this.currentPool / this.initialPool;
+src\enhanced\token-queue-system-8.13-bleeding.ts:195: console.log(`💰 Initial Pool: $${this.initialPool.toFixed(2)}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:197: console.log(`📈 Total Growth: $${(this.currentPool - this.initialPool).toFixed(2)} (${roi.toFixed(2)}%)`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:226: return ((this.currentPool - this.initialPool) / this.initialPool) * 100;
+src\enhanced\token-queue-system-8.13-bleeding.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system-8.13-bleeding.ts:263: initialPool: this.initialPool,
+src\enhanced\token-queue-system-8.13-bleeding.ts:323: initialPool: number,  // NO DEFAULT VALUE
+src\enhanced\token-queue-system-8.13-bleeding.ts:326: console.log(`🔍 DEBUG: TokenQueueManager received initialPool: $${initialPool}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:336: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system-8.13-bleeding.ts:338: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\enhanced\token-queue-system.backup.ts:51: private initialPool: number;
+src\enhanced\token-queue-system.backup.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\enhanced\token-queue-system.backup.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.backup.ts:65: this.initialPool = initialPool;
+src\enhanced\token-queue-system.backup.ts:66: this.currentPool = initialPool;
+src\enhanced\token-queue-system.backup.ts:69: this.maxPool = initialPool;
+src\enhanced\token-queue-system.backup.ts:70: this.minPool = initialPool;
+src\enhanced\token-queue-system.backup.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\enhanced\token-queue-system.backup.ts:113: this.totalPnL = this.currentPool - this.initialPool;   // CORRECT
+src\enhanced\token-queue-system.backup.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.backup.ts:189: const growthMultiplier = this.currentPool / this.initialPool;
+src\enhanced\token-queue-system.backup.ts:195: console.log(`💰 Initial Pool: $${this.initialPool.toFixed(2)}`);
+src\enhanced\token-queue-system.backup.ts:197: console.log(`📈 Total Growth: $${(this.currentPool - this.initialPool).toFixed(2)} (${roi.toFixed(2)}%)`);
+src\enhanced\token-queue-system.backup.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\enhanced\token-queue-system.backup.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\enhanced\token-queue-system.backup.ts:226: return ((this.currentPool - this.initialPool) / this.initialPool) * 100;
+src\enhanced\token-queue-system.backup.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.backup.ts:263: initialPool: this.initialPool,
+src\enhanced\token-queue-system.backup.ts:323: initialPool: number,  // NO DEFAULT VALUE
+src\enhanced\token-queue-system.backup.ts:326: console.log(`🔍 DEBUG: TokenQueueManager received initialPool: $${initialPool}`);
+src\enhanced\token-queue-system.backup.ts:336: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.backup.ts:338: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\enhanced\token-queue-system.ts:51: private initialPool: number;
+src\enhanced\token-queue-system.ts:63: constructor(initialPool: number, positionSizeUSD: number,) {
+src\enhanced\token-queue-system.ts:64: console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.ts:65: this.initialPool = initialPool;
+src\enhanced\token-queue-system.ts:66: this.currentPool = initialPool;
+src\enhanced\token-queue-system.ts:69: this.maxPool = initialPool;
+src\enhanced\token-queue-system.ts:70: this.minPool = initialPool;
+src\enhanced\token-queue-system.ts:73: this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+src\enhanced\token-queue-system.ts:113: this.totalPnL = this.currentPool - this.initialPool;   // CORRECT
+src\enhanced\token-queue-system.ts:159: const maxPossibleTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.ts:189: const growthMultiplier = this.currentPool / this.initialPool;
+src\enhanced\token-queue-system.ts:195: console.log(`💰 Initial Pool: $${this.initialPool.toFixed(2)}`);
+src\enhanced\token-queue-system.ts:197: console.log(`📈 Total Growth: $${(this.currentPool - this.initialPool).toFixed(2)} (${roi.toFixed(2)}%)`);
+src\enhanced\token-queue-system.ts:210: console.log(`📈 Max Trades w/o Reinvestment: ${Math.floor(this.initialPool / this.positionSize)}`);
+src\enhanced\token-queue-system.ts:212: console.log(`💡 Reinvestment Advantage: ${(this.totalTrades - Math.floor(this.initialPool / this.positionSize))} extra trades`);
+src\enhanced\token-queue-system.ts:226: return ((this.currentPool - this.initialPool) / this.initialPool) * 100;
+src\enhanced\token-queue-system.ts:234: const maxTrades = Math.floor(this.initialPool / this.positionSize);
+src\enhanced\token-queue-system.ts:263: initialPool: this.initialPool,
+src\enhanced\token-queue-system.ts:325: initialPool: number,  // NO DEFAULT VALUE
+src\enhanced\token-queue-system.ts:328: console.log(`🔍 DEBUG: TokenQueueManager received initialPool: $${initialPool}`);
+src\enhanced\token-queue-system.ts:338: console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+src\enhanced\token-queue-system.ts:340: this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+src\index.ts:94: const KEEP_TRADING_AMOUNT = sessionInfo.initialPool;             // Keep initial pool amount
+src\index.ts:123: function calculateGrossTarget(netTarget: number, initialPool: number, reinvestmentRate: number): number {
+src\index.ts:125: const netProfit = netTarget - initialPool;
+src\index.ts:130: const grossNeeded = initialPool + netProfit + taxes + nextSession + fees;
+src\index.ts:133: console.log(`   Initial Pool: $${initialPool.toLocaleString()}`);
+src\index.ts:657: console.log(`   Initial Pool: $${sessionInfo.initialPool.toLocaleString()}`);
+src\index.ts:663: console.log(`   - Initial: $${sessionInfo.initialPool.toLocaleString()}`);
+src\index.ts:681: initialPool: sessionInfo.initialPool,
+src\index.ts:701: console.log(`   Initial Pool: $${nextSession.initialPool.toLocaleString()}`);
+src\index.ts:704: console.log(`   Growth Needed: ${(nextSession.grossTarget / nextSession.initialPool).toFixed(1)}x`);
+src\index.ts:720: poolManager.currentPool = nextSession.initialPool;
+src\index.ts:721: poolManager.initialPool = nextSession.initialPool;
+src\index.ts:751: Initial Pool: $${walletRecord.initialPool.toLocaleString()}
+src\index.ts:758: Growth Achieved: ${(walletRecord.finalPool / walletRecord.initialPool).toFixed(2)}x
+src\index.ts:814: initial_balance: currentSession.initialPool,
+src\index.ts:832: const initialPool = currentSession.initialPool;
+src\index.ts:839: initialPool,
+src\index.ts:864: console.log(`💰 Initial Pool: $${initialPool.toLocaleString()}`);
+src\index.ts:2009: poolManager.currentPool = currentSession.initialPool;
+src\index.ts:2027: const currentPool = poolManager.currentPool || currentSession.initialPool;
+src\index.ts:2032: console.log(`   Initial: $${currentSession.initialPool.toLocaleString()}`);
+src\index.ts:2051: console.log(`   Session ${nextSession.sessionNumber}: $${nextSession.initialPool.toLocaleString()} → $${nextSession.targetPool.toLocaleString()} target`);
+src\index.ts:2341: console.log(`   Initial: $${currentSession.initialPool.toFixed(2)}`);
+src\index.ts:2368: grandTotalInitial += session.initialPool || 0;
+src\index.ts:2379: grandTotalInitial += currentSession.initialPool || 0;
+src\live-monitor.ts:31: initialPool: number;
+src\live-monitor.ts:146: initialPool: MASTER_SETTINGS.pool.initialPool,
+src\live-monitor.ts:464: const progress = ((currentPool - this.status.poolStatus.initialPool) /
+src\live-monitor.ts:465: (this.status.poolStatus.targetPool - this.status.poolStatus.initialPool)) * 100;
+src\live-monitor.ts:469: const expectedRange = this.status.poolStatus.initialPool * 0.1; // 10% variance
+src\live-monitor.ts:470: if (Math.abs(currentPool - this.status.poolStatus.initialPool) > expectedRange) {
+src\live-monitor.ts:471: const change = ((currentPool - this.status.poolStatus.initialPool) / this.status.poolStatus.initialPool * 100).toFixed(2);
+src\live-monitor.ts:515: this.status.tradingMetrics.sessionPnL = this.status.poolStatus.currentPool - this.status.poolStatus.initialPool;
+src\live-monitor.ts:1059: const change = pool.currentPool - pool.initialPool;
+src\live-monitor.ts:1060: const changePercent = (change / pool.initialPool * 100).toFixed(2);
+src\live-monitor.ts:1069: `Session 1: $${pool.initialPool.toFixed(0)} → $${pool.targetPool.toFixed(0)}`,
+src\live-monitor.ts:1071: `Initial Pool: {cyan-fg}$${pool.initialPool.toFixed(2)}{/cyan-fg}`,
+src\monitoring\csv-monitor.ts:50: private initialPool = 600; // Default starting pool
+src\monitoring\csv-monitor.ts:173: (transactions.length > 0 ? transactions[transactions.length - 1].pool_after : this.initialPool);
+src\monitoring\csv-monitor.ts:176: const sessionGross = currentPool - this.initialPool;
+src\monitoring\csv-monitor.ts:182: const netROI = this.initialPool > 0 ? (totalNet / this.initialPool) * 100 : 0;
+src\monitoring\csv-monitor.ts:227: console.log(`Pool: ${chalk.green(`$${this.initialPool.toFixed(2)}`)} → ${chalk.green(`$${metrics.currentPool.toFixed(2)}`)}`);
+src\monitoring\csv-monitor.ts:236: if (metrics.currentPool < this.initialPool * 0.9) {
+src\reset-for-live.js:183: initialPool: 600,
+src\secure-pool-system.ts:32: tradingPoolMin: session.initialPool,
+src\secure-pool-system.ts:36: keepInWallet: session.initialPool,
+src\test-session-fix.ts:12: const grossProfit = session.targetPool - session.initialPool;
+src\test-session-fix.ts:17: console.log(`  Start: $${session.initialPool.toLocaleString()}`);
+src\test-session-fix.ts:27: if (nextSession.initialPool === session.nextSessionPool) {
+src\utils\configValidator.ts:100: console.log(`💰 Initial Pool: $${MASTER_SETTINGS.pool.initialPool}`);
+src\utils\managers\walletRotator.ts:13: initialPool: number;
+src\utils\managers\walletRotator.ts:109: initialPool: 1000, // Default $1000 per wallet
+src\utils\managers\walletRotator.ts:166: console.log(`   💰 Initial Pool: $${selectedWallet.initialPool}`);
+src\utils\managers\walletRotator.ts:180: wallet.currentPool = stats.totalProfit + wallet.initialPool;
+src\utils\managers\walletRotator.ts:199: roi: ((wallet.currentPool - wallet.initialPool) / wallet.initialPool) * 100,
+src\utils\managers\walletRotator.ts:212: console.log(`   🎯 ROI: ${(((wallet.currentPool || 0) - wallet.initialPool) / wallet.initialPool * 100).toFixed(2)}%`);
+src\utils\managers\walletRotator.ts:291: ? completed.reduce((sum, w) => sum + (((w.currentPool || w.initialPool) - w.initialPool) / w.initialPool * 100), 0) / completed.length```
+
+**targetPool** found in:
+
+```
+src\advanced-features.ts:126: public checkTargetAndSwitch(currentPool: number, targetPool: number): boolean {
+src\advanced-features.ts:131: if (currentPool >= targetPool) {
+src\advanced-features.ts:132: console.log(`🎯 Target reached! Pool: $${currentPool} >= $${targetPool}`);
+src\advanced-features.ts:599: this.config.pool.targetPool
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\configBridge.ts:9: export const TARGET_POOL = config.pool?.targetPool || 1701.75;
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:65: const HARDWARE_WALLET_THRESHOLD = sessionInfo.targetPool * 0.8;  // 80% of target pool
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:66: const HARDWARE_WALLET_TRANSFER = sessionInfo.targetPool * 0.6;   // 60% of target pool
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:183: targetPool: masterConfig?.pool?.targetPool
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:256: pool: { targetPool: CFG.TARGET_POOL }
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:424: console.log(`   Target Pool: $${sessionInfo.targetPool.toLocaleString()} ✅`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:447: targetPool: sessionInfo.targetPool,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:501: masterConfig.pool.targetPool = nextSession.grossTarget;  // Use GROSS target
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:520: Target Pool: $${walletRecord.targetPool.toLocaleString()}
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:574: const targetPool = currentSession.grossTarget;  // Use GROSS target
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:591: targetPool: targetPool, // Use session gross target
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:611: console.log(`📈 Gross Target: $${targetPool.toLocaleString()} (must reach)`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\index.ts:1320: console.log(`   Session ${nextSession.sessionNumber}: $${nextSession.initialPool.toLocaleString()} → $${nextSession.targetPool.toLocaleString()} target`);
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:32: targetPool: number;            // Goal amount in USD
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:346: targetPool: 700,
+src\backup-old\versions\critical\critical_2025-08-27T20-48-28\masterConfig.ts:694: console.log(`Target Pool: $${config.pool.targetPool}`);
+src\botController.ts:36: targetPool: number;
+src\botController.ts:127: const grossProfit = session.targetPool - session.initialPool;
+src\botController.ts:254: if (this.sessionProgression[0].targetPool !== SECURE_POOL_THRESHOLD) {
+src\botController.ts:255: console.warn(`⚠️ Session 1 target (${this.sessionProgression[0].targetPool}) doesn't match secure-pool threshold (${SECURE_POOL_THRESHOLD})`);
+src\botController.ts:369: session.profitRequired = session.targetPool - session.initialPool;
+src\botController.ts:370: session.growthMultiplier = session.targetPool / session.initialPool;
+src\botController.ts:371: session.nextSessionPool = Math.floor(session.targetPool * (session.reinvestmentPercent / 100));
+src\botController.ts:572: if (session.targetPool <= session.initialPool) {
+src\botController.ts:694: console.log(`💰 Pool: $${currentSession.initialPool.toLocaleString()} → $${currentSession.targetPool.toLocaleString()}`);
+src\botController.ts:709: console.log(`💰 New Pool: $${currentSession.initialPool.toLocaleString()} → $${currentSession.targetPool.toLocaleString()}`);
+src\core\AUTO-CONFIG.ts:254: const targetPool = isLastSession
+src\core\AUTO-CONFIG.ts:258: const profitRequired = targetPool - currentPool;
+src\core\AUTO-CONFIG.ts:292: targetPool: Math.round(targetPool * 100) / 100,
+src\core\AUTO-CONFIG.ts:294: growthMultiplier: Math.round((targetPool / currentPool) * 100) / 100,
+src\core\AUTO-CONFIG.ts:546: summary += `   Session ${index + 1}: $${session.initialPool.toLocaleString()} → $${session.targetPool.toLocaleString()} (${session.growthMultiplier}x)\n`;
+src\core\CONFIG-BRIDGE.ts:108: targetPool: TARGET_POOL,
+src\core\CONFIG-BRIDGE.ts:143: z_targetPool: TARGET_POOL,
+src\core\CONFIG-HISTORY.ts:7: targetPool: number;
+src\core\CONFIG-WIZARD.ts:257: const targetPool = i === config.sessionCount - 1
+src\core\CONFIG-WIZARD.ts:261: const profitRequired = targetPool - currentPool;
+src\core\CONFIG-WIZARD.ts:282: targetPool: Math.round(targetPool * 100) / 100,
+src\core\CONFIG-WIZARD.ts:284: growthMultiplier: Math.round((targetPool / currentPool) * 100) / 100,
+src\core\CONFIG-WIZARD.ts:358: console.log(`   🎯 Target Pool: $${session.targetPool.toLocaleString()}`);
+src\core\CONFIG-WIZARD.ts:376: const totalTargetGrowth = config.sessions[config.sessions.length - 1].targetPool / config.initialPool;
+src\core\CONFIG-WIZARD.ts:378: console.log(`   📊 Overall Growth: ${totalTargetGrowth.toFixed(1)}x ($${config.initialPool.toLocaleString()} → $${config.sessions[config.sessions.length - 1].targetPool.toLocaleString()})`);
+src\core\CONFIG-WIZARD.ts:386: config.sessions[config.sessions.length - 1].targetPool / config.initialPool,
+src\core\SMART-CONFIG-SYSTEM.ts:294: targetPool: 'sessions' in config && config.sessions.length > 0
+src\core\SMART-CONFIG-SYSTEM.ts:295: ? config.sessions[config.sessions.length - 1].targetPool
+src\core\SMART-CONFIG-VALIDATOR.ts:337: if (session.targetPool <= session.initialPool) {
+src\core\SMART-CONFIG-VALIDATOR.ts:340: message: `❌ Target pool ($${session.targetPool}) must be greater than initial pool ($${session.initialPool})`,
+src\core\SMART-CONFIG-VALIDATOR.ts:345: if (session.profitRequired !== (session.targetPool - session.initialPool)) {
+src\core\SMART-CONFIG-VALIDATOR.ts:348: message: `❌ Profit required ($${session.profitRequired}) doesn't match target - initial ($${session.targetPool - session.initialPool})`,
+src\core\SMART-CONFIG-VALIDATOR.ts:353: if (Math.abs(session.growthMultiplier - (session.targetPool / session.initialPool)) > 0.01) {
+src\core\SMART-CONFIG-VALIDATOR.ts:356: message: `❌ Growth multiplier (${session.growthMultiplier}) doesn't match calculated ratio (${(session.targetPool / session.initialPool).toFixed(2)})`,
+src\core\UNIFIED-CONTROL.ts:77: targetPool: number;
+src\core\UNIFIED-CONTROL.ts:101: targetPool: Math.min(7000, userTargetPool * 0.07),  // 7% of user target or $7k
+src\core\UNIFIED-CONTROL.ts:115: session1.profitRequired = session1.targetPool - session1.initialPool;
+src\core\UNIFIED-CONTROL.ts:116: session1.growthMultiplier = session1.targetPool / session1.initialPool;
+src\core\UNIFIED-CONTROL.ts:125: targetPool: Math.min(20000, userTargetPool * 0.2),  // 20% of user target or $20k
+src\core\UNIFIED-CONTROL.ts:138: session2.profitRequired = session2.targetPool - session2.initialPool;
+src\core\UNIFIED-CONTROL.ts:139: session2.growthMultiplier = session2.targetPool / session2.initialPool;
+src\core\UNIFIED-CONTROL.ts:148: targetPool: Math.min(50000, userTargetPool * 0.5),  // 50% of user target or $50k
+src\core\UNIFIED-CONTROL.ts:161: session3.profitRequired = session3.targetPool - session3.initialPool;
+src\core\UNIFIED-CONTROL.ts:162: session3.growthMultiplier = session3.targetPool / session3.initialPool;
+src\core\UNIFIED-CONTROL.ts:171: targetPool: userTargetPool,    // User's actual target
+src\core\UNIFIED-CONTROL.ts:184: session4.profitRequired = session4.targetPool - session4.initialPool;
+src\core\UNIFIED-CONTROL.ts:185: session4.growthMultiplier = session4.targetPool / session4.initialPool;
+src\core\UNIFIED-CONTROL.ts:319: targetPoolUSD: 100000,
+src\core\UNIFIED-CONTROL.ts:784: console.log(`   Pool: $${MASTER_SETTINGS.pool.initialPool} → $${MASTER_SETTINGS.pool.targetPoolUSD}`);
+src\core\UNIFIED-CONTROL.ts:788: console.log(`   Sessions: ${MASTER_SETTINGS.sessions.length} configured to reach $${MASTER_SETTINGS.pool.targetPoolUSD}`);
+src\core\UNIFIED-CONTROL.ts:803: export const getTargetPool = () => enforcer.getValue('pool.targetPoolUSD', 'getTargetPool');
+src\enhanced\masterConfig.ts:44: targetPool: number;            // Goal amount in USD
+src\enhanced\masterConfig.ts:359: targetPool: 100000,
+src\enhanced\masterConfig.ts:690: targetPool: config.pool.targetPool,
+src\enhanced\token-detection-test.ts:33: targetPool: MASTER_SETTINGS.pool.targetPool,
+src\enhanced\token-detection-test.ts:118: console.log(`   Target: $${config.targetPool.toLocaleString()}`);
+src\enhanced\token-detection-test.ts:221: if (poolSummary.currentPool >= config.targetPool) {
+src\enhanced\token-detection-test.ts:222: console.log(`\n🏆 TARGET ACHIEVED! Pool reached $${config.targetPool.toLocaleString()}`);
+src\enhanced\token-detection-test.ts:417: console.log(`🎯 Progress: ${poolSummary.targetProgress.toFixed(2)}% to $${config.targetPool.toLocaleString()}`);
+src\enhanced\token-detection-test.ts:448: const remaining = config.targetPool - poolSummary.currentPool;
+src\enhanced\token-detection-test.ts:505: if (poolSummary.currentPool >= config.targetPool) {
+src\enhanced\token-detection-test.ts:507: console.log(`🏁 Achieved $${config.targetPool.toLocaleString()} in ${poolSummary.totalTrades} trades!`);
+src\enhanced\token-detection-test.ts:509: const remaining = config.targetPool - poolSummary.currentPool;
+src\enhanced\token-detection-test.ts:511: console.log(`🎯 Remaining: $${remaining.toFixed(2)} to $${config.targetPool.toLocaleString()}`);
+src\index.ts:92: const HARDWARE_WALLET_THRESHOLD = sessionInfo.targetPool * 0.8;  // 80% of target pool
+src\index.ts:93: const HARDWARE_WALLET_TRANSFER = sessionInfo.targetPool * 0.6;   // 60% of target pool
+src\index.ts:244: pool: { targetPool: MASTER_SETTINGS.pool.targetPoolUSD }
+src\index.ts:659: console.log(`   Target Pool: $${sessionInfo.targetPool.toLocaleString()} ✅`);
+src\index.ts:682: targetPool: sessionInfo.targetPool,
+src\index.ts:752: Target Pool: $${walletRecord.targetPool.toLocaleString()}
+src\index.ts:833: const targetPool = currentSession.targetPool;  // Use target pool from session config
+src\index.ts:846: targetPool: targetPool, // Use session gross target
+src\index.ts:865: console.log(`📈 Target Pool: $${targetPool.toLocaleString()}`);
+src\index.ts:2051: console.log(`   Session ${nextSession.sessionNumber}: $${nextSession.initialPool.toLocaleString()} → $${nextSession.targetPool.toLocaleString()} target`);
+src\live-monitor.ts:34: targetPool: number;
+src\live-monitor.ts:149: targetPool: MASTER_SETTINGS.pool.targetPoolUSD,
+src\live-monitor.ts:465: (this.status.poolStatus.targetPool - this.status.poolStatus.initialPool)) * 100;
+src\live-monitor.ts:1069: `Session 1: $${pool.initialPool.toFixed(0)} → $${pool.targetPool.toFixed(0)}`,
+src\live-monitor.ts:1073: `Target Pool:  {yellow-fg}$${pool.targetPool.toFixed(2)}{/yellow-fg}`,
+src\reset-for-live.js:184: targetPool: 7000,
+src\secure-pool-system.ts:33: tradingPoolMax: session.targetPool,
+src\secure-pool-system.ts:34: withdrawToHardware: session.targetPool * 0.7,
+src\secure-pool-system.ts:37: sessionNetTarget: session.targetPool - (session.profitRequired * 0.4),
+src\test-config.js:10: console.log('Target Pool:', masterConfig.pool?.targetPool);
+src\test-session-fix.ts:12: const grossProfit = session.targetPool - session.initialPool;
+src\test-session-fix.ts:18: console.log(`  Target: $${session.targetPool.toLocaleString()}`);
+src\utils\configValidator.ts:101: console.log(`🎯 Target Pool: $${MASTER_SETTINGS.pool.targetPoolUSD}`);```
+

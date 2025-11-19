@@ -67,7 +67,7 @@ export class WalletRotator {
         sessionHistory: wallet.sessionHistory || []
       }));
       
-      console.log(`📊 Loaded ${this.walletPool.length} wallets from pool`);
+      console.log(`📊 Wallet rotation pool loaded: ${this.walletPool.length} wallets available for spreading transaction risk`);
       this.displayWalletPoolStatus();
     } else {
       console.log('⚠️ No wallet pool found. Creating new pool...');

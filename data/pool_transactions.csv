@@ -1,2 +1,63 @@
 ﻿timestamp,action,amount,balance,poolBalance,tradeCount,details
 2025-09-26T19:21:05.265Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T11:31:39.706Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T11:33:41.733Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T12:43:44.695Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T12:52:20.025Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T12:56:42.916Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T13:11:28.236Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T14:08:44.962Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-28T15:49:01.795Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-31T01:29:13.447Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-31T04:15:12.881Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-31T04:17:00.513Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-31T20:15:34.425Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-10-31T21:21:09.999Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-03T01:39:41.887Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-03T14:05:35.458Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-03T15:54:24.197Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-03T16:05:50.600Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-04T22:28:54.673Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-05T01:21:16.830Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-05T04:37:34.860Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T17:50:25.189Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T19:11:14.563Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T19:12:40.201Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T19:24:35.981Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T19:55:51.168Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:01:07.549Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:07:28.433Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:11:40.640Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:18:24.990Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:23:15.578Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:30:59.915Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T20:36:03.259Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T21:01:10.726Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-06T21:07:12.077Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-07T04:11:34.130Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-07T04:31:55.156Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-07T04:39:30.646Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-07T04:50:55.069Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-07T06:03:33.155Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-09T17:11:55.496Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-09T20:58:11.091Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-09T21:23:11.887Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-10T23:16:25.371Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-11T04:10:57.637Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-11T19:07:37.116Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-12T03:36:12.077Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-12T04:38:45.610Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-12T19:09:38.200Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-12T23:35:36.988Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-12T23:56:09.389Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-13T01:40:39.258Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-13T19:10:19.664Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-14T01:24:59.026Z,pool_status,0,600,600,,Pool initialized with $600 and $11.6705 positions
+2025-11-14T20:28:40.824Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-14T20:52:33.482Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-14T20:54:41.456Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-15T12:38:26.747Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-17T23:09:09.396Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-18T02:07:46.034Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-18T02:09:38.471Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)
+2025-11-18T02:23:16.509Z,pool_status,0,600,600,,Pool initialized with $600 and $15 positions (SOL price: $170)

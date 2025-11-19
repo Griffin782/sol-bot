@@ -31,7 +31,52 @@ export class TokenCheckManager {
       }
 
       const mintPublicKey = new PublicKey(mintAddress);
-      const mintInfo = await getMint(this.connection, mintPublicKey);
+
+      // VIP2 RETRY LOGIC: RPC needs time to index accounts after gRPC detection
+      // gRPC detects tokens instantly (0ms), but RPC needs 200-400ms to index
+      // Solution: Initial delay + retry with exponential backoff
+      // Proven: 100% success rate (69/69 tokens) with Helius RPC on Nov 6, 2025
+      const delays = [200, 100, 100]; // ms: initial + retry intervals
+      let mintInfo = null;
+      let lastError = null;
+
+      for (let attempt = 1; attempt <= delays.length + 1; attempt++) {
+        try {
+          // Apply delay before attempt (except first attempt uses first delay)
+          if (attempt === 1) {
+            await new Promise(resolve => setTimeout(resolve, delays[0]));
+          } else if (attempt <= delays.length) {
+            await new Promise(resolve => setTimeout(resolve, delays[attempt - 1]));
+          }
+
+          mintInfo = await getMint(this.connection, mintPublicKey);
+          console.log(`✅ [AUTHORITY-CHECK] Mint account found for ${mintAddress.slice(0, 8)}... on attempt ${attempt}`);
+          break; // Success!
+
+        } catch (error: any) {
+          lastError = error;
+
+          // Check if it's a TokenAccountNotFoundError
+          const isNotFoundError = error.toString().includes('TokenAccountNotFoundError') ||
+                                  error.toString().includes('Account does not exist');
+
+          if (isNotFoundError && attempt < delays.length + 1) {
+            console.log(`⏳ [AUTHORITY-CHECK] Mint not indexed yet for ${mintAddress.slice(0, 8)}..., retry ${attempt}/${delays.length + 1}...`);
+            continue; // Retry
+          } else {
+            // Different error or max retries reached
+            if (attempt === delays.length + 1) {
+              console.error(`❌ [AUTHORITY-CHECK] Failed to get mint after ${delays.length + 1} retries for ${mintAddress.slice(0, 8)}...`);
+            }
+            throw error;
+          }
+        }
+      }
+
+      // Verify we got the mint info
+      if (!mintInfo) {
+        throw lastError || new Error("Failed to get mint account after retries");
+      }
 
       // Check if mint authority exists (is not null)
       const hasMintAuthority = mintInfo.mintAuthority !== null;

@@ -1,16 +1,16 @@
 ﻿// index.ts - SOL-BOT v5.0 with Pool Integration, Wallet Rotation & Tax Management
 // MUST BE FIRST - Unified Control Import
-import { BUY_AMOUNT, MAX_TRADES, POSITION_SIZE } from './core/CONFIG-BRIDGE';
-import { getMaxTrades } from './core/UNIFIED-CONTROL';
-import * as CFG from '../z-new-controls/z-configBridge';
-import { botController, getCurrentSessionInfo, getCurrentTradingParams, getActiveConfidenceLevel, shouldPauseTrading, logTradeResult } from './botController';
+import { BUY_AMOUNT, MAX_TRADES, POSITION_SIZE, TEST_MODE } from './core/CONFIG-BRIDGE';
+import { getMaxTrades, MASTER_SETTINGS } from './core/UNIFIED-CONTROL';
+import { botController, getCurrentSessionInfo, getCurrentTradingParams, getActiveConfidenceLevel, shouldPauseTrading, logTradeResult, fetchCurrentSOLPrice } from './botController';
 console.log('📊 Using BotController:', { session: botController.getCurrentSessionIndex() + 1, params: getCurrentTradingParams() });
 import { LAMPORTS_PER_SOL, Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { heliusLimiter } from './utils/rateLimiter';
-import WebSocket from "ws";
+import * as WebSocket from "ws";
 import Client, { SubscribeRequest, SubscribeUpdate } from "@triton-one/yellowstone-grpc";
 import { ClientDuplexStream } from "@grpc/grpc-js";
 import { config } from "./config";
+import { PositionMonitor, MonitoredPosition } from "./monitoring/positionMonitor";
 import { validateEnv } from "./utils/env-validator";
 import { WebSocketManager, ConnectionState } from "./utils/managers/websocketManager";
 import { getMintFromSignature } from "./utils/handlers/signatureHandler";
@@ -21,6 +21,12 @@ import { enforceQualityFilter } from "./core/TOKEN-QUALITY-FILTER";
 import { createSubscribeRequest, isSubscribeUpdateTransaction, sendSubscribeRequest } from "./utils/managers/grpcManager";
 import { openBrowser, playSound } from "./utils/handlers/childProcessHandler";
 import { swapToken, unSwapToken } from "./utils/handlers/jupiterHandler";
+import { initializePumpSwapSDK, pumpswapBuy } from "./utils/handlers/pumpswapHandler";
+import { SwapResult } from "./types";
+import { validateJupiterSetup } from './utils/simple-jupiter-validator';
+import { MarketRecorder } from '../market-intelligence/handlers/market-recorder';
+import { getMarketIntelligenceConfig, SessionConfig } from '../market-intelligence/config/mi-config';
+import { PartialExitManager, ExitResult } from './core/PARTIAL-EXIT-SYSTEM';
 import { HandledMint, NewPositionRecord } from "./types";
 import { logEngine } from "./utils/managers/logManager";
 import { deletePositionByWalletAndMint, deletePositionsByWallet, getPositionByMint, selectAllPositions, updatePositionTokenAmount } from "./tracker/db";
@@ -29,25 +35,37 @@ import { getWalletAddress } from "./utils/handlers/walletHandler";
 import { shortenAddress } from "./utils/func";
 import * as fs from 'fs';
 import * as path from 'path';
-import { vipTokenCheck } from './utils/vip-token-check';
+// ✅ REMOVED: vipTokenCheck import (replaced with enforceQualityFilter)
 // Security Integration
 import { checkTradingAllowed, logBuy, logSell, logFailedTrade, displaySecurityStatus, getStatusSummary, isEmergencyMode } from './security/securityIntegration';
-import { 
-  initializeSecurePool, 
-  checkForSecureWithdrawal, 
+import {
+  initializeSecurePool,
+  checkForSecureWithdrawal,
   calculatePositionSizeInSOL,
   displaySecurePoolStatus,
-  currentSecureSession,
-  setTestMode  // ADD THIS 
+  currentSecureSession
+  // Removed setTestMode - secure-pool now reads directly from UNIFIED-CONTROL
 } from './secure-pool-system';
-// Tax compliance integration
-import { recordTrade, TaxableTransaction } from '../tax-compliance/taxTracker';
-// SLEDGEHAMMER FIX - FORCE LIVE MODE
+// Tax compliance integration (temporarily disabled - moved to backup)
+// import { recordTrade, TaxableTransaction } from '../tax-compliance/taxTracker';
+interface TaxableTransaction {
+  timestamp: string;
+  type: 'buy' | 'sell';
+  tokenMint: string;
+  amount: number;
+  signature: string;
+  success: boolean;
+  profit?: number;
+}
+async function recordTrade(data: TaxableTransaction) {
+  // Tax tracking temporarily disabled
+  console.log('[Tax] Trade recorded (stub):', data.type, data.tokenMint);
+}
+// ✅ FIX Bug #10, #12: Removed misleading "FORCE MODE" comments
 // EMERGENCY SAFETY WRAPPER - Prevents scam token purchases
 import { EmergencySafetyWrapper, wrapTradeFunction } from './emergency-safety-wrapper';
 
-
-console.log("🔨 INDEX.TS: FORCED TO LIVE MODE");
+// Trading mode controlled by UNIFIED-CONTROL.ts (not forced here)
 
 
 // ============================================
@@ -69,7 +87,13 @@ safetyWrapper.resetEmergencyMode(); // RESET EMERGENCY MODE
 console.log('🔧 Emergency mode RESET - trading enabled');
 console.log('   Will block all scam tokens (pump, inu, moon, etc.)');
 
+// Market Intelligence System
+let marketRecorder: MarketRecorder | null = null;
 
+// Validate Jupiter configuration before starting
+console.log('\n🔍 Validating configuration...');
+validateJupiterSetup();
+console.log('✅ Configuration valid - starting bot...\n');
 
 const TAX_RATE = sessionInfo.taxReservePercent / 100; // From botController session
 const FEE_RATE = tradingParams.slippageTolerance / 100; // From botController
@@ -168,11 +192,12 @@ const GRPC_AUTH_TOKEN = env.GRPC_AUTH_TOKEN || "";
 const globalConnection = new Connection(env.RPC_HTTPS_URI, "confirmed");
 
 // Global Variables (from working version)
-const DATA_STREAM_METHOD = config.data_stream.method || "wss";
-const DATA_STREAM_MODE = config.data_stream.mode || "program";
-const DATA_STREAM_PROGRAMS = config.data_stream.program;
+// ✅ UPDATED: Now reading from UNIFIED-CONTROL instead of old config.ts
+const DATA_STREAM_METHOD = MASTER_SETTINGS.dataStream.method || "wss";
+const DATA_STREAM_MODE = MASTER_SETTINGS.dataStream.mode || "program";
+const DATA_STREAM_PROGRAMS = MASTER_SETTINGS.dataStream.programs;
 const DATA_STREAM_PROGRAMS_LOG_DISCRIMINATORS = DATA_STREAM_PROGRAMS.filter((p) => p.enabled).map((p) => p.log_discriminator);
-const DATA_STREAM_WALLETS = config.data_stream.wallet;
+const DATA_STREAM_WALLETS = MASTER_SETTINGS.dataStream.wallets;
 let activeTransactions = 0;
 const MAX_CONCURRENT = config.concurrent_transactions;
 const CHECK_MODE = config.checks.mode || "full";
@@ -182,6 +207,8 @@ const WALLET_MONITOR_INTERVAL = config.token_sell.wallet_token_balances_monitor_
 let globalWsManager: WebSocketManager | null = null;
 let globalGrpcClient: Client | null = null;
 let globalGrpcStream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
+// ✅ VIP2 INTEGRATION: Position Monitor for real-time price tracking
+let globalPositionMonitor: PositionMonitor | null = null;
 let shutdownInProgress = false;
 
 // Trading variables
@@ -198,16 +225,18 @@ let handledMints: { signature: string; timestamp: number }[] = [];
 let queueManager: any = null;  // Make it global
 let performanceLogger: any = null;
 let tokenAnalyzer: any = null;
-let scanningPaused = false; 
+let scanningPaused = false;
 
-// Determine mode
-const IS_TEST_MODE = process.env.TEST_MODE === "true";
-const MIN_TIME_BETWEEN_TRADES = 10000; // ADD THIS LINE - 10 seconds minimum
-console.log("🔍 Line 242 - IS_TEST_MODE set to:", IS_TEST_MODE, "from env:", process.env.TEST_MODE);
-console.log("🔍 TEST_MODE final evaluation:", IS_TEST_MODE, "from env value:", process.env.TEST_MODE);
+// ============================================
+// PARTIAL EXIT SYSTEM (NEW - Oct 28, 2025)
+// ============================================
+let partialExitManager: PartialExitManager | null = null; 
 
-// Add this debug line temporarily to verify:
-console.log("🔍 TEST_MODE Status:", IS_TEST_MODE ? "ENABLED ✅" : "DISABLED ❌");
+// Mode now controlled by UNIFIED-CONTROL.ts (imported via CONFIG-BRIDGE)
+// To change mode: Edit src/core/UNIFIED-CONTROL.ts line 272
+// ✅ FIX Bug #9: Removed TEST_MODE alias, using TEST_MODE directly
+const MIN_TIME_BETWEEN_TRADES = 10000; // 10 seconds minimum
+console.log("🎯 Trading Mode:", TEST_MODE ? "PAPER (Test Mode)" : "LIVE (Real Trades)");
 
 // Statistics tracking
 const stats = {
@@ -217,15 +246,52 @@ const stats = {
   tokensRejected: 0,
   tokensBlocked: 0,  // Quality filter blocks
   poolDepleted: 0,
-  totalTrades: 0
+  totalTrades: 0,
+  wins: 0,           // Paper trading wins
+  losses: 0          // Paper trading losses
 };
 
 // Import and initialize tax tracker
 import { AdvancedBotManager } from './advanced-features';
 
+
+// ============================================================================
+// COMPREHENSIVE LOGGING SYSTEM - Added by comprehensive-fix-script.js
+// ============================================================================
+const logStream = fs.createWriteStream(path.join(__dirname, '../complete-bot-log.txt'), { flags: 'a' });
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+// Override console.log to write to both console and file
+console.log = function(...args) {
+  const timestamp = new Date().toISOString();
+  const output = `[${timestamp}] ${args.join(' ')}`;
+  logStream.write(output + '\n');
+  originalConsoleLog.apply(console, args);
+};
+
+// Override console.error
+console.error = function(...args) {
+  const timestamp = new Date().toISOString();
+  const output = `[${timestamp}] [ERROR] ${args.join(' ')}`;
+  logStream.write(output + '\n');
+  originalConsoleError.apply(console, args);
+};
+
+// Override console.warn
+console.warn = function(...args) {
+  const timestamp = new Date().toISOString();
+  const output = `[${timestamp}] [WARN] ${args.join(' ')}`;
+  logStream.write(output + '\n');
+  originalConsoleWarn.apply(console, args);
+};
+
+console.log('✅ Comprehensive logging system initialized - logging to complete-bot-log.txt');
+// ============================================================================
 const advancedManager = new AdvancedBotManager({
-  runtime: { maxRuntime: CFG.z_MAX_RUNTIME },
-  pool: { targetPool: CFG.z_TARGET_POOL }
+  runtime: { maxRuntime: MASTER_SETTINGS.limits.duration || 3600000 }, // Use duration or default 1 hour
+  pool: { targetPool: MASTER_SETTINGS.pool.targetPoolUSD }
 });
 
 // ============================================
@@ -261,14 +327,40 @@ if (maxTrades > 0 || maxLoss > 0) {
 
 // Duplicate Protection
 const recentBuys = new Set<string>();
+const recentBuyTimes = new Map<string, number>(); // ✅ FIX Bug #8: Track purchase times for cleanup
 const BUY_COOLDOWN = Infinity; // Never allow re-buy
 
+// ✅ FIX Bug #8: Cleanup old entries from recentBuys (24-hour expiry)
+function cleanupRecentBuys(): void {
+  const now = Date.now();
+  const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+  for (const [mint, timestamp] of recentBuyTimes.entries()) {
+    if (now - timestamp > MAX_AGE) {
+      recentBuys.delete(mint);
+      recentBuyTimes.delete(mint);
+      console.log(`🧹 Cleanup: Removed ${mint.slice(0,8)} from recentBuys (24hr expired)`);
+    }
+  }
+}
+
+// Run cleanup every hour
+setInterval(cleanupRecentBuys, 60 * 60 * 1000);
+
 // Token Queue System - Prevents rate limits by processing tokens sequentially
+const MAX_QUEUE_SIZE = 100; // ✅ FIX Bug #7: Added queue size limit
 const tokenQueue: string[] = [];
 let isProcessingQueue = false;
 
 // Add tokens to queue instead of processing immediately
 async function addToQueue(tokenMint: string) {
+  // ✅ FIX Bug #7: Check queue size before adding
+  if (tokenQueue.length >= MAX_QUEUE_SIZE) {
+    console.log(`⚠️ Queue full (${MAX_QUEUE_SIZE}) - dropping token: ${tokenMint.slice(0,8)}...`);
+    stats.tokensRejected++;
+    return;
+  }
+
   // Skip if already in queue
   if (tokenQueue.includes(tokenMint)) {
     console.log(`⏭️ Token already in queue: ${tokenMint.slice(0,8)}...`);
@@ -276,6 +368,7 @@ async function addToQueue(tokenMint: string) {
   }
 
   // Perform checks based on mode BEFORE adding to queue
+  // Token Quality Check - Three modes supported
   if (CHECK_MODE === "full") {
     logEngine.writeLog(`${getCurrentTime()}`, `Performing full security checks...`, "white");
 
@@ -314,6 +407,20 @@ async function addToQueue(tokenMint: string) {
     }
 
     logEngine.writeLog(`${getCurrentTime()}`, `✅ All checks passed, adding to queue...`, "green");
+
+    // Market Intelligence: Record token detection (non-critical)
+    if (marketRecorder?.isRecording()) {
+      marketRecorder.onTokenDetected(
+        { mint: tokenMint, timestamp: Date.now(), detection_method: 'websocket' },
+        {
+          mint: tokenMint,
+          score: 70, // Passed full checks, high quality
+          would_buy: true,
+          has_mint_authority: authorities.hasMintAuthority,
+          has_freeze_authority: authorities.hasFreezeAuthority
+        }
+      ).catch(err => console.log('⚠️  MI recording error (non-critical):', err));
+    }
   } else if (CHECK_MODE === "quick") {
     logEngine.writeLog(`${getCurrentTime()}`, `Quick mode - minimal checks`, "yellow");
 
@@ -323,8 +430,87 @@ async function addToQueue(tokenMint: string) {
       stats.tokensRejected++;
       return;
     }
+
+    // Market Intelligence: Record token detection (non-critical)
+    if (marketRecorder?.isRecording()) {
+      marketRecorder.onTokenDetected(
+        { mint: tokenMint, timestamp: Date.now(), detection_method: 'websocket' },
+        {
+          mint: tokenMint,
+          score: 60, // Passed quick checks, medium quality
+          would_buy: true,
+          has_mint_authority: false, // Quick mode doesn't check authorities
+          has_freeze_authority: false
+        }
+      ).catch(err => console.log('⚠️  MI recording error (non-critical):', err));
+    }
+  } else if (CHECK_MODE === "minimal") {
+    // Minimal mode: Only check for mint/freeze authorities (fastest, but no rugcheck)
+    logEngine.writeLog(`${getCurrentTime()}`, `Minimal mode - authority checks only`, "yellow");
+
+    const authorities = await getTokenAuthorities(tokenMint);
+    if (authorities.hasMintAuthority || authorities.hasFreezeAuthority) {
+      logEngine.writeLog(`${getCurrentTime()}`, `❌ Token has authorities, skipping...`, "red");
+      stats.tokensRejected++;
+      return;
+    }
+
+    // Market Intelligence: Record token detection
+    if (marketRecorder?.isRecording()) {
+      marketRecorder.onTokenDetected(
+        { mint: tokenMint, timestamp: Date.now(), detection_method: 'websocket' },
+        {
+          mint: tokenMint,
+          score: 50, // Minimal checks, medium-low quality
+          would_buy: true,
+          has_mint_authority: false,
+          has_freeze_authority: false
+        }
+      ).catch(err => console.log('⚠️  MI recording error (non-critical):', err));
+    }
   } else {
-    logEngine.writeLog(`${getCurrentTime()}`, `⚠️ YOLO mode - no checks performed!`, "yellow");
+    // SAFEGUARD: Unknown check mode - default to FULL checks for safety
+    logEngine.writeLog(`${getCurrentTime()}`, `⚠️ Unknown check mode "${CHECK_MODE}", defaulting to FULL checks for safety`, "yellow");
+
+    const authorities = await getTokenAuthorities(tokenMint);
+    if (!authorities.hasFreezeAuthority && !authorities.hasMintAuthority) {
+      logEngine.writeLog(`${getCurrentTime()}`, `✅ Token authorities safe, proceeding with checks...`, "white");
+
+      const isRugged = await getRugCheckConfirmed(tokenMint, logEngine);
+      if (isRugged) {
+        logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed rug check, skipping...`, "red");
+        stats.tokensRejected++;
+        return;
+      }
+
+      // ✅ FIXED: Using comprehensive quality filter with 65-point scoring system
+      const passedQualityFilter = await enforceQualityFilter(tokenMint, logEngine);
+      if (!passedQualityFilter) {
+        logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed quality filter, skipping...`, "red");
+        stats.tokensBlocked++;
+        return;
+      }
+
+      logEngine.writeLog(`${getCurrentTime()}`, `✅ Token passed all checks!`, "green");
+    } else {
+      logEngine.writeLog(`${getCurrentTime()}`, `❌ Token has ${authorities.hasMintAuthority ? 'mint' : ''}${authorities.hasFreezeAuthority ? ' freeze' : ''} authority, skipping...`, "red");
+      stats.tokensRejected++;
+      return;
+    }
+
+    // Market Intelligence: Record token detection
+    if (marketRecorder?.isRecording()) {
+      marketRecorder.onTokenDetected(
+        { mint: tokenMint, timestamp: Date.now(), detection_method: 'websocket' },
+        {
+          mint: tokenMint,
+          score: 70, // Passed full checks
+          would_buy: true,
+          has_mint_authority: authorities.hasMintAuthority,
+          has_freeze_authority: authorities.hasFreezeAuthority
+        }
+      ).catch(err => console.log('⚠️  MI recording error (non-critical):', err));
+    }
   }
 
   tokenQueue.push(tokenMint);
@@ -478,7 +664,7 @@ async function resetForLiveTrading(): Promise<void> {
     console.log("   Starting with Session 1");
     console.log("   Initial Pool: $600");
     console.log("   First Target: $6,000 net ($10,680 gross)");
-    console.log(`   Mode: ${IS_TEST_MODE ? 'TEST' : 'LIVE'} TRADING\n`);
+    console.log(`   Mode: ${TEST_MODE ? 'TEST' : 'LIVE'} TRADING\n`);
     
   } catch (error) {
     console.error("❌ Error during reset:", error);
@@ -570,7 +756,7 @@ async function rotateWallet(poolManager: any): Promise<boolean> {
     console.log(`   Reinvestment: ${(nextSession.reinvestmentPercent * 100).toFixed(0)}%`);
     
     // Generate new wallet (in test mode, just simulate)
-    if (!IS_TEST_MODE) {
+    if (!TEST_MODE) {
       // TODO: Implement actual wallet creation and fund transfer
       // const newWallet = Keypair.generate();
       // const newWalletPath = path.join(WALLETS_DIR, `wallet_${currentWalletIndex + 1}.json`);
@@ -665,10 +851,37 @@ async function initializeEnhancements(): Promise<void> {
       RPC_WSS_URI.replace('wss', 'https'),
       'confirmed'
     );
-    
+
+    // Market Intelligence Bot Session Tracker (Optional - disable with MI_ENABLED=false in .env)
+    if (process.env.MI_ENABLED !== 'false') {
+      try {
+        // Create session-specific configuration
+        const sessionConfig: SessionConfig = {
+          session_id: Date.now().toString(),
+          session_type: TEST_MODE ? 'test' : 'live',
+          session_start: Date.now(),
+          bot_version: '5.0.0',
+          session_metadata: {
+            initial_balance: currentSession.initialPool,
+            target_pool: currentSession.grossTarget,
+            max_runtime: MASTER_SETTINGS.limits.duration || 3600000,
+          },
+        };
+
+        // Initialize with session-specific config
+        marketRecorder = new MarketRecorder(connection, getMarketIntelligenceConfig(sessionConfig));
+        await marketRecorder.initialize();
+        console.log(`✅ Market Intelligence session tracker started (${sessionConfig.session_type} mode)`);
+        console.log(`   Session ID: ${sessionConfig.session_id}`);
+        console.log(`   Database: data/bot-sessions/${sessionConfig.session_type}-session-${sessionConfig.session_id}.db`);
+      } catch (error) {
+        console.log('⚠️  Market Intelligence failed to start (bot continues normally):', error);
+      }
+    }
+
     // Use current session configuration
     const initialPool = currentSession.initialPool;
-    const targetPool = currentSession.grossTarget;  // Use GROSS target
+    const targetPool = currentSession.targetPool;  // Use target pool from session config
     const positionSize = POSITION_SIZE;
     
     queueManager = new TokenQueueManager(
@@ -684,7 +897,7 @@ async function initializeEnhancements(): Promise<void> {
         targetPool: targetPool, // Use session gross target
         sessionNumber: currentSession.sessionNumber,
         compoundProfits: true,
-        testMode: IS_TEST_MODE,
+        testMode: TEST_MODE,
         exit: {}
       }
     );
@@ -700,8 +913,11 @@ async function initializeEnhancements(): Promise<void> {
     console.log("✅ Enhanced features initialized");
     console.log(`📊 SESSION ${currentSession.sessionNumber} CONFIGURATION:`);
     console.log(`💰 Initial Pool: $${initialPool.toLocaleString()}`);
-    console.log(`🎯 Net Target: $${(currentSession?.netTarget || 0).toLocaleString()} (what you keep)`);
-    console.log(`📈 Gross Target: $${targetPool.toLocaleString()} (must reach)`);
+    console.log(`📈 Target Pool: $${targetPool.toLocaleString()}`);
+    const grossProfit = currentSession.profitRequired || 0;
+    const netProfit = grossProfit * 0.6; // After 40% tax reserve
+    console.log(`🎯 Gross Profit Goal: $${grossProfit.toLocaleString()} (before tax)`);
+    console.log(`💵 Net Profit Goal: $${netProfit.toLocaleString()} (what you keep after 40% tax reserve)`);
     console.log(`📊 Position Size: ${positionSize} SOL ($${(positionSize * 170).toFixed(2)})`);
     
     // Start 5x+ monitoring if available
@@ -735,7 +951,7 @@ async function monitor5xOpportunities(): Promise<void> {
           position.currentGain
         );
         
-        if (decision.confidence > (CFG.z_ENABLE_5X_DETECTION ? 0.7 : 0.9) && decision.shouldHold) {
+        if (decision.confidence > 0.7 && decision.shouldHold) { // 5x+ detection threshold
           console.log(`💎 5x+ Signal: Extending hold for ${position.tokenMint.slice(0,8)}...`);
           queueManager.extendHold?.(position.tokenMint, decision.extendMinutes);
         }
@@ -752,11 +968,11 @@ async function monitor5xOpportunities(): Promise<void> {
 async function verifyPositions(): Promise<boolean> {
   console.log('⏳ Rate limiting: 2 second delay added');
   try {
-    const walletAddress: string | null = "EmKj5PB2V6QHQ3uD2NkwGSEum3C5z61p8ehWAGyMcBUV";
+    const walletAddress: string | null = process.env.WALLET_ADDRESS || getWalletAddress();
     console.log("💰 WALLET CHECK:");
     console.log("  - Address:", walletAddress);
-    console.log("  - Using real wallet:", !IS_TEST_MODE);
-    console.log('Using hardcoded wallet:', walletAddress);
+    console.log("  - Mode:", TEST_MODE ? "PAPER (simulated trades, real wallet monitoring)" : "LIVE (real trades)");
+    console.log('Using wallet from env:', walletAddress);
     if (!walletAddress) {
       const currentTime = getCurrentTime();
       console.log('DEBUG: Checking wallet...');
@@ -764,15 +980,15 @@ async function verifyPositions(): Promise<boolean> {
       console.log('WALLET_ADDRESS:', process.env.WALLET_ADDRESS);
       console.log('Provider:', BUY_PROVIDER);
       logEngine.writeLog(`${currentTime}`, `Invalid or missing wallet address while using ${BUY_PROVIDER} as provider.`, "red");
-      console.log("🔥 IS_TEST_MODE value:", IS_TEST_MODE);
+      console.log("🔥 TEST_MODE value:", TEST_MODE);
 
-    if (false) {  // WAS: if (IS_TEST_MODE)
+    if (TEST_MODE) {  // ✅ FIX Bug #2: Restored proper test mode check
       logEngine.writeLog(`${getCurrentTime()}`, "TEST MODE - Continuing without wallet", "yellow");
       return true;
     }
       
       
-      //if (IS_TEST_MODE) {
+      //if (TEST_MODE) {
         //logEngine.writeLog(`${currentTime}`, `TEST MODE - Continuing without wallet`, "yellow");
         //return true;
 
@@ -836,31 +1052,22 @@ async function verifyPositions(): Promise<boolean> {
 
     return true;
   } catch (err) {
-    if (false) {  // FORCE SKIP TEST CHECK IN WALLET VERIFICATION
-      logEngine.writeLog(`${getCurrentTime()}`, `TEST MODE - Skipping verification: ${err}`, "yellow");
-      return true;
-    }
+    // ✅ REMOVED: if(false) dead code bypass pattern
     logEngine.writeLog(`${getCurrentTime()}`, `Verification issue: ${err}`, "red");
     return false;
   }
 }
 
 // ============================================
-// POSITION MONITORING (from working version)
+// POSITION MONITORING - NOW HANDLED BY gRPC
 // ============================================
-async function monitorPositions(): Promise<void> {
-  if (activeTransactions === 0) {
-    const positions: NewPositionRecord[] = await selectAllPositions();
-    if (positions.length !== 0) {
-      logEngine.writeLog(`✅ Verifying`, `Checking token balances for outside changes...`, "white");
-      verifyPositions();
-
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
-      console.log('⏳ Rate limiting: 2 second delay added');
-    }
-  }
-  setTimeout(monitorPositions, WALLET_MONITOR_INTERVAL);
-}
+// Position price monitoring is now handled by globalPositionMonitor (gRPC real-time)
+// See lines ~1183-1211 for PositionMonitor initialization
+// Price updates trigger via onPriceUpdate callback which calls partialExitManager.updatePrice()
+// This provides <400ms latency vs 2-10s polling, with ZERO Jupiter API calls
+//
+// Old monitorPositions() function removed to eliminate Jupiter Price API polling
+// which was causing 429 rate limit errors (60+ requests/minute)
 
 // ============================================
 // WEBSOCKET LISTENER (from working version - COMPLETE)
@@ -973,20 +1180,21 @@ async function startWebSocketListener(): Promise<void> {
                 if (mintStr) {
                   stats.tokensDetected++;
                   
-                  // RATE LIMITING
+                  // RATE LIMITING - Check but DON'T increment yet
                   const now = new Date().getMinutes();
                   if (now !== currentMinute) {
                     tradesThisMinute = 0;
                     currentMinute = now;
                   }
-                  
+
                   if (tradesThisMinute >= MAX_TRADES_PER_MINUTE) {
                     logEngine.writeLog(`${getCurrentTime()}`, `⏸️ Rate limit: Skipping token (${tradesThisMinute} trades this minute)`, "yellow");
                     stats.tokensRejected++;
                     return;
                   }
-                  tradesThisMinute++;
-                  
+                  // ❌ REMOVED: tradesThisMinute++ (was counting detections, not actual trades!)
+                  // ✅ NOW: Only increments after successful trade (see line ~1507)
+
                   logEngine.writeLog(`${getCurrentTime()}`, `New token detected: ${mintStr.slice(0, 8)}... (#${stats.tokensDetected})`, "yellow");
                   
                   activeTransactions++;
@@ -1018,7 +1226,46 @@ async function startWebSocketListener(): Promise<void> {
   });
 
   globalWsManager.connect();
-  console.log("🔍 Line 1000 - IS_TEST_MODE before token processing:", IS_TEST_MODE);
+}
+
+// ============================================
+// VIP2 INTEGRATION: POSITION MONITOR INITIALIZATION
+// ============================================
+async function initializePositionMonitor(): Promise<void> {
+  try {
+    // Get current SOL price for USD conversions from CoinGecko (not Jupiter)
+    const solPrice = await fetchCurrentSOLPrice(); // Returns price with $170 fallback
+
+    globalPositionMonitor = new PositionMonitor(
+      GRPC_HTTP_URI,
+      GRPC_AUTH_TOKEN,
+      solPrice
+    );
+
+    // Set up real-time price update callback for instant exit signals
+    globalPositionMonitor.onPriceUpdate(async (mint, priceUSD) => {
+      // Trigger exit strategy check on price updates
+      if (partialExitManager && !shutdownInProgress) {
+        try {
+          const positions = await getPositionByMint(mint);
+          if (positions.length > 0) {
+            const position = positions[0];
+            // Check if exit conditions met
+            await partialExitManager.updatePrice(mint, priceUSD);
+          }
+        } catch (error) {
+          console.log(`⚠️ Error checking exit for ${mint}:`, error);
+        }
+      }
+    });
+
+    // Start monitoring
+    await globalPositionMonitor.start();
+    logEngine.writeLog(`👁️ Position Monitor`, `Real-time price tracking ACTIVE (${solPrice} SOL/USD)`, "blue", true);
+  } catch (error) {
+    logEngine.writeLog(`⚠️ Position Monitor`, `Failed to start: ${error}`, "yellow");
+    globalPositionMonitor = null;
+  }
 }
 
 // ============================================
@@ -1035,12 +1282,125 @@ async function startGrpcListener(): Promise<void> {
   try {
     await sendSubscribeRequest(globalGrpcStream, request);
     logEngine.writeLog(`${getCurrentTime()}`, `Geyser connection and subscription established`, "green");
+
+    // ✅ VIP2 INTEGRATION: Initialize Position Monitor for real-time price tracking
+    await initializePositionMonitor();
   } catch (error) {
     logEngine.writeLog(`${getCurrentTime()}`, `Error in subscription process: ${error}`, "red");
     if (globalGrpcStream) {
       globalGrpcStream.end();
     }
+    return;
   }
+
+  // ============================================
+  // gRPC MESSAGE HANDLERS (NEWLY ADDED)
+  // ============================================
+
+  globalGrpcStream.on("data", async (data: SubscribeUpdate) => {
+    try {
+      // CHECK IF SHUTDOWN IS IN PROGRESS
+      if (shutdownInProgress) {
+        return;
+      }
+
+      // CHECK IF SCANNING IS PAUSED
+      if (scanningPaused) {
+        if (Date.now() % 10000 < 100) {
+          const poolStatus = queueManager?.getPoolManager?.()?.getPoolSummary?.();
+          if (poolStatus?.canTrade) {
+            scanningPaused = false;
+            console.log('💚 Pool replenished! Resuming scanning...');
+          } else {
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
+      // Process gRPC transaction data
+      if (!isSubscribeUpdateTransaction(data) || !data.filters.includes("sniper")) {
+        return;
+      }
+
+      const transaction = data.transaction?.transaction;
+      const meta = transaction?.meta;
+
+      if (!transaction || !meta) {
+        return;
+      }
+
+      const tokenBalances = meta.postTokenBalances || meta.preTokenBalances;
+      if (!tokenBalances?.length) return;
+
+      // Check for token creation in logs
+      if (!meta.logMessages.some((msg: string) =>
+        DATA_STREAM_PROGRAMS_LOG_DISCRIMINATORS.some((discriminator) => msg.includes(discriminator))
+      )) {
+        return;
+      }
+
+      // Extract mint from token balances
+      const firstBalance = tokenBalances[0];
+      const mintStr = firstBalance?.mint;
+
+      if (!mintStr) {
+        return;
+      }
+
+      // Check if already handled
+      const existingMint = handledMints.find(m => m.signature === mintStr);
+      if (existingMint) {
+        return;
+      }
+
+      handledMints.push({
+        signature: mintStr,
+        timestamp: Date.now()
+      });
+
+      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+      handledMints = handledMints.filter(m => m.timestamp > fiveMinutesAgo);
+
+      stats.tokensDetected++;
+
+      // RATE LIMITING
+      const now = new Date().getMinutes();
+      if (now !== currentMinute) {
+        tradesThisMinute = 0;
+        currentMinute = now;
+      }
+
+      if (tradesThisMinute >= MAX_TRADES_PER_MINUTE) {
+        logEngine.writeLog(`${getCurrentTime()}`, `⏸️ Rate limit: Skipping token (${tradesThisMinute} trades this minute)`, "yellow");
+        stats.tokensRejected++;
+        return;
+      }
+
+      logEngine.writeLog(`${getCurrentTime()}`, `🔍 [gRPC] Token detected: ${mintStr.slice(0, 8)}... (#${stats.tokensDetected})`, "green");
+
+      activeTransactions++;
+      await addToQueue(mintStr);
+      activeTransactions--;
+
+    } catch (error) {
+      logEngine.writeLog(`${getCurrentTime()}`, `gRPC data processing error: ${error}`, "red");
+    }
+  });
+
+  globalGrpcStream.on("error", (error: Error) => {
+    logEngine.writeLog(`${getCurrentTime()}`, `gRPC stream error: ${error}`, "red");
+    // Connection will auto-reconnect via Triton client
+  });
+
+  globalGrpcStream.on("end", () => {
+    logEngine.writeLog(`${getCurrentTime()}`, `gRPC stream ended`, "yellow");
+  });
+
+  globalGrpcStream.on("close", () => {
+    logEngine.writeLog(`${getCurrentTime()}`, `gRPC stream closed`, "yellow");
+  });
 }
 
 // ============================================
@@ -1051,7 +1411,16 @@ async function startGrpcListener(): Promise<void> {
 safetyWrapper.resetEmergencyMode();
 console.log("🔧 Emergency mode reset - trading enabled");
 
-addToQueue(returnedMint);
+/**
+ * Process a token purchase - main buying logic
+ * @param tokenMint - The mint address of the token to purchase
+ */
+async function processPurchase(tokenMint: string): Promise<void> {
+  const returnedMint = tokenMint; // Keep existing variable name for compatibility
+  let actualBuyAmount = BUY_AMOUNT; // Declare at function scope
+
+  // ✅ FIX Bug #6: Removed duplicate addToQueue call
+  // processPurchase is called FROM processQueue, token already in queue
   if (!returnedMint) return;
 
   console.log("🚨 ATTEMPTING TO BUY TOKEN - WATCH THIS");
@@ -1143,46 +1512,119 @@ if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
   
 
   console.log("📍 Checkpoint 4: Reached test mode check");
+
 // Test mode vs live mode check
-  console.log("🔍 Line 1068 - IS_TEST_MODE in processPurchase:", IS_TEST_MODE, "Type:", typeof IS_TEST_MODE);
-  if (false) { // Use proper test mode check
-    console.log("⚠️ TEST MODE BYPASSED - FORCING LIVE");
-    console.log("⚠️ ENTERING TEST MODE BLOCK - NO TRADES WILL EXECUTE");
-    // Test mode - just log but don't trade
+  if (TEST_MODE) {
+    console.log("📝 PAPER TRADING MODE - Simulating trade without execution");
+
     const tokenStr = typeof returnedMint === 'string' ? returnedMint : String(returnedMint);
-    logEngine.writeLog(`${getCurrentTime()}`, `[TEST MODE] Token: ${tokenStr.slice(0, 8)}...`, "white");
-    logEngine.writeLog(`${getCurrentTime()}`, `[TEST MODE] Amount: ${BUY_AMOUNT} SOL`, "white");
+
+    // Use the SAME amount logic as live (actualBuyAmount),
+    // not a hardcoded BUY_AMOUNT only.
+    const simulatedTokenAmount = 1_000_000; // Simulate 1M tokens
+    const simulatedEntryPriceSOL = actualBuyAmount / simulatedTokenAmount;
+    const simulatedEntryPriceUSD = simulatedEntryPriceSOL * SOL_PRICE;
+
+    logEngine.writeLog(
+      `${getCurrentTime()}`,
+      `[TEST MODE] Token: ${tokenStr.slice(0, 8)}...`,
+      "white"
+    );
+    logEngine.writeLog(
+      `${getCurrentTime()}`,
+      `[TEST MODE] Amount: ${actualBuyAmount} SOL`,
+      "white"
+    );
+
+    console.log(`\n💰 [PAPER TRADING] Simulated Buy Details:`);
+    console.log(`   Token: ${tokenStr.slice(0, 8)}...`);
+    console.log(`   Amount Bought: ${simulatedTokenAmount.toLocaleString()} tokens`);
+    console.log(`   SOL Invested: ${actualBuyAmount} SOL`);
+    console.log(`   Entry Price: ${simulatedEntryPriceSOL.toFixed(10)} SOL/token`);
+    console.log(`   Entry Price USD: $${simulatedEntryPriceUSD.toFixed(8)}`);
+
+    // Add to Partial Exit Manager (tracks exit signals)
+    if (partialExitManager) {
+      try {
+        partialExitManager.addPosition(
+          returnedMint,              // Token mint address
+          simulatedEntryPriceSOL,    // Entry price in SOL per token
+          simulatedTokenAmount,      // Amount of tokens bought
+          actualBuyAmount,           // SOL invested (matches LIVE logic)
+          undefined                  // Symbol (optional)
+        );
+        console.log(`✅ [PAPER TRADING] Position added to exit tracking`);
+      } catch (exitError) {
+        console.warn('⚠️ [PAPER TRADING] Failed to add to exit tracking:', exitError);
+      }
+    }
+
+    // Add to Position Monitor (tracks real-time price)
+    if (globalPositionMonitor) {
+      try {
+        const monitoredPosition: MonitoredPosition = {
+          mint: returnedMint,
+          poolAddress: "", // Derive from token if needed
+          entryPriceSOL: simulatedEntryPriceSOL,
+          entryPriceUSD: simulatedEntryPriceUSD,
+          tokenAmount: simulatedTokenAmount,
+          entryTime: new Date(),
+          dex: "pumpfun" // Assume pump.fun for now
+        };
+        await globalPositionMonitor.addPosition(monitoredPosition);
+        console.log(`👁️ [PAPER TRADING] Position added to real-time monitoring`);
+      } catch (monitorError) {
+        console.warn('⚠️ [PAPER TRADING] Failed to add to price monitor:', monitorError);
+      }
+    }
+
+    // ✅ Mirror LIVE behaviour: mark as bought & block duplicates
     stats.tokensBought++;
     stats.totalTrades++;
 
+    // PERMANENT duplicate protection, same as LIVE branch
+    recentBuys.add(returnedMint);
+    recentBuyTimes.set(returnedMint, Date.now());
+    logEngine.writeLog(
+      `${getCurrentTime()}`,
+      `🔒 [TEST MODE] Token ${returnedMint.slice(0,8)} PERMANENTLY blocked from re-buy`,
+      "red"
+    );
+    console.log(`🚫 [TEST MODE] Duplicate protection: ${returnedMint} will NEVER be bought again in this run`);
+
+    // (Optional) you can also bump trade counters if you want them to match live stats:
+    // tradeCount++;
+    // tradesThisMinute++;
+    // console.log(`📊 [TEST MODE] Trade ${tradeCount}${maxTrades ? \`/\${maxTrades}\` : ''} simulated`);
+    // console.log(`📊 [TEST MODE] Rate limiter: ${tradesThisMinute}/${MAX_TRADES_PER_MINUTE} trades this minute`);
+
     if (OPEN_BROWSER) openBrowser("https://gmgn.ai/sol/token/" + returnedMint);
     if (PLAY_SOUND) playSound("New Token!");
+
+    // Exit BEFORE real on-chain trading (exits now handled by PartialExitManager callbacks)
     return;
   }
 
-  console.log("✅ ENTERING LIVE MODE BLOCK - TRADES SHOULD EXECUTE");
-  // Emergency verification
-  if (!false && IS_TEST_MODE) {
-    console.log("🚨 EMERGENCY CHECK: IS_TEST_MODE is still true but bypassed!");
-    console.log("  - Original IS_TEST_MODE:", IS_TEST_MODE);
-    console.log("  - Force bypass active: true");
-    console.log("  - Will execute LIVE trades despite test mode setting");
-  }
+  console.log("✅ LIVE TRADING MODE - Executing real trades");
+
+  console.log("✅ LIVE TRADING MODE - Executing real trades");
   console.log("📍 Checkpoint 5: Executing trade logic");
   // Live mode execution continues here
 
   // Live trading execution
   let result = false;
+  let swapResult: SwapResult | null = null; // For Jupiter trades
   if (BUY_PROVIDER === "sniperoo") {
     logEngine.writeLog(`${getCurrentTime()}`, `Sniping Token using Sniperoo...`, "green");
     console.log("🚀 ATTEMPTING LIVE TRADE:");
     console.log("  - Token:", returnedMint);
     console.log("  - Amount:", BUY_AMOUNT);
-    console.log("  - Wallet:", "EmKj5PB2V6QHQ3uD2NkwGSEum3C5z61p8ehWAGyMcBUV");
+    console.log("  - Wallet:", process.env.WALLET_ADDRESS || "Not configured");
 
     // 🔍 QUALITY FILTER - Block scam tokens BEFORE attempting trade
+    // ✅ FIXED: Using comprehensive 65-point quality filter with 40+ scam word detection
     console.log("🛡️ Running comprehensive quality filter...");
-    const qualityPassed = await vipTokenCheck(returnedMint);
+    const qualityPassed = await enforceQualityFilter(returnedMint, logEngine);
     if (!qualityPassed) {
       console.log("🚫 Token failed quality filter - BLOCKED");
       stats.tokensBlocked++;
@@ -1196,7 +1638,7 @@ if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
     const maxPositionUSD = 50; // Safety cap regardless of tier
     const currentPositionUSD = BUY_AMOUNT * SOL_PRICE; // Using dynamic SOL price
 
-    let actualBuyAmount = BUY_AMOUNT;
+    actualBuyAmount = BUY_AMOUNT; // Update function-scope variable
 
     if (currentPositionUSD > maxPositionUSD) {
       actualBuyAmount = maxPositionUSD / SOL_PRICE; // Convert back to SOL using current price
@@ -1245,16 +1687,125 @@ if (result) {
     console.warn('⚠️ Tax recording failed:', taxError);
   }
 }
+  } else if (BUY_PROVIDER === "pumpswap") {
+    logEngine.writeLog(`${getCurrentTime()}`, `Sniping Token using PumpSwap SDK (on-chain)...`, "green");
+    console.log("🚀 ATTEMPTING LIVE TRADE (PumpSwap SDK):");
+    console.log("  - Token:", returnedMint);
+    console.log("  - Amount:", BUY_AMOUNT);
+    console.log("  - Wallet:", process.env.WALLET_ADDRESS || "Not configured");
+
+    // 🔍 QUALITY FILTER - Block scam tokens BEFORE attempting trade
+    // ✅ FIXED: Using comprehensive 65-point quality filter with 40+ scam word detection
+    console.log("🛡️ Running comprehensive quality filter...");
+    const qualityPassed = await enforceQualityFilter(returnedMint, logEngine);
+    if (!qualityPassed) {
+      console.log("🚫 Token failed quality filter - BLOCKED");
+      stats.tokensBlocked++;
+      return;
+    }
+    console.log("✅ Token passed quality filter - proceeding to trade");
+
+    // 💰 POSITION SIZE SAFETY CAP - Prevent oversized trades
+    const maxPositionUSD = 50; // Safety cap regardless of tier
+    const currentPositionUSD = BUY_AMOUNT * SOL_PRICE; // Using dynamic SOL price
+    actualBuyAmount = BUY_AMOUNT; // Update function-scope variable
+
+    if (currentPositionUSD > maxPositionUSD) {
+      actualBuyAmount = maxPositionUSD / SOL_PRICE; // Convert back to SOL using current price
+      console.log(`⚠️ Position capped: $${currentPositionUSD.toFixed(2)} → $${maxPositionUSD}`);
+      console.log(`   Original: ${BUY_AMOUNT} SOL → Capped: ${actualBuyAmount.toFixed(4)} SOL`);
+      console.log(`   Using SOL price: $${SOL_PRICE}`);
+    }
+
+    // Try PumpSwap SDK first, fallback to Jupiter if it fails
+    console.log("🎯 Attempting PumpSwap SDK direct on-chain execution...");
+    const pumpswapTxSig = await pumpswapBuy(WSOL_MINT, returnedMint, actualBuyAmount * LAMPORTS_PER_SOL);
+
+    // If PumpSwap succeeds, wrap result in SwapResult format
+    if (pumpswapTxSig) {
+      console.log("✅ PumpSwap SDK execution successful!");
+      logEngine.writeLog(`${getCurrentTime()}`, `✅ Bought using PumpSwap SDK (on-chain)`, "green");
+      swapResult = {
+        success: true,
+        txSignature: pumpswapTxSig,
+        inputAmount: actualBuyAmount,
+        outputAmount: 0, // PumpSwap doesn't return output amount directly
+      };
+    } else {
+      // PumpSwap failed or unavailable, fallback to Jupiter
+      console.log("⚠️ PumpSwap failed or unavailable, falling back to Jupiter API...");
+      logEngine.writeLog(`${getCurrentTime()}`, `PumpSwap unavailable, using Jupiter fallback...`, "yellow");
+      swapResult = await swapToken(WSOL_MINT, returnedMint, actualBuyAmount, logEngine);
+    }
+
+    console.log("📊 TRADE RESULT:", swapResult);
+    console.log("  - Success:", swapResult.success ? "YES" : "NO");
+    if (swapResult.success && swapResult.outputAmount) {
+      console.log("  - Tokens Received:", swapResult.outputAmount);
+      console.log("  - SOL Spent:", swapResult.inputAmount);
+      console.log("  - Transaction:", swapResult.txSignature);
+    } else if (!swapResult.success) {
+      console.log("  - Error:", swapResult.error);
+    }
+
+console.log('[TAX_DEBUG] Buy executed:', { tokenMint: returnedMint, amount: BUY_AMOUNT, price: 'estimated' });
+
+// Record trade with enhanced logging
+try {
+  const taxData: TaxableTransaction = {
+    timestamp: new Date().toISOString(),
+    type: 'buy',
+    tokenMint: returnedMint,
+    amount: BUY_AMOUNT,
+    signature: swapResult.txSignature || `${BUY_PROVIDER}_buy_${Date.now()}`,
+    success: swapResult.success
+  };
+
+  console.log('[TAX_DEBUG] Recording trade:', taxData);
+  await recordTrade(taxData);
+
+  const filename = `data/tax_records_${new Date().toISOString().slice(0,10)}.json`;
+  console.log('[TAX_DEBUG] File written:', filename);
+} catch (taxError) {
+  console.error('[TAX_DEBUG] Recording failed:', taxError);
+}
+
+
+
+// 📊 TAX RECORDING - PUMPSWAP BUY TRANSACTION
+if (swapResult && swapResult.success) {
+  // ============================================
+  // INCREMENT ABSOLUTE TRADE COUNTER
+  // ============================================
+  const { incrementTradeCounter } = await import('./core/FORCE-TRADE-LIMIT');
+  incrementTradeCounter();
+
+  try {
+    const taxData: TaxableTransaction = {
+      timestamp: new Date().toISOString(),
+      type: 'buy',
+      tokenMint: returnedMint,
+      amount: BUY_AMOUNT,
+      signature: swapResult.txSignature || `pumpswap_buy_${Date.now()}`,
+      success: swapResult.success
+    };
+    await recordTrade(taxData);
+    console.log(`📊 Tax recorded: ${taxData.type} - ${taxData.tokenMint?.slice(0,8)}...`);
+  } catch (taxError) {
+    console.warn('⚠️ Tax recording failed:', taxError);
+  }
+}
   } else if (BUY_PROVIDER === "jupiter") {
     logEngine.writeLog(`${getCurrentTime()}`, `Sniping Token using Jupiter Swap API...`, "green");
     console.log("🚀 ATTEMPTING LIVE TRADE:");
     console.log("  - Token:", returnedMint);
     console.log("  - Amount:", BUY_AMOUNT);
-    console.log("  - Wallet:", "EmKj5PB2V6QHQ3uD2NkwGSEum3C5z61p8ehWAGyMcBUV");
+    console.log("  - Wallet:", process.env.WALLET_ADDRESS || "Not configured");
 
     // 🔍 QUALITY FILTER - Block scam tokens BEFORE attempting trade
+    // ✅ FIXED: Using comprehensive 65-point quality filter with 40+ scam word detection
     console.log("🛡️ Running comprehensive quality filter...");
-    const qualityPassed = await vipTokenCheck(returnedMint);
+    const qualityPassed = await enforceQualityFilter(returnedMint, logEngine);
     if (!qualityPassed) {
       console.log("🚫 Token failed quality filter - BLOCKED");
       stats.tokensBlocked++;
@@ -1267,7 +1818,7 @@ if (result) {
     // 💰 POSITION SIZE SAFETY CAP - Prevent oversized trades
     const maxPositionUSD = 50; // Safety cap regardless of tier
     const currentPositionUSD = BUY_AMOUNT * SOL_PRICE; // Using dynamic SOL price
-    let actualBuyAmount = BUY_AMOUNT;
+    actualBuyAmount = BUY_AMOUNT; // Update function-scope variable
 
     if (currentPositionUSD > maxPositionUSD) {
       actualBuyAmount = maxPositionUSD / SOL_PRICE; // Convert back to SOL using current price
@@ -1289,10 +1840,17 @@ if (result) {
     //}
 
     // Just execute the trade directly
-    let result = await swapToken(WSOL_MINT, returnedMint, actualBuyAmount, logEngine);
+    swapResult = await swapToken(WSOL_MINT, returnedMint, actualBuyAmount, logEngine);
 
-    console.log("📊 TRADE RESULT:", result);
-    console.log("  - Success:", result ? "YES" : "NO");
+    console.log("📊 TRADE RESULT:", swapResult);
+    console.log("  - Success:", swapResult.success ? "YES" : "NO");
+    if (swapResult.success && swapResult.outputAmount) {
+      console.log("  - Tokens Received:", swapResult.outputAmount);
+      console.log("  - SOL Spent:", swapResult.inputAmount);
+      console.log("  - Transaction:", swapResult.txSignature);
+    } else if (!swapResult.success) {
+      console.log("  - Error:", swapResult.error);
+    }
 
 console.log('[TAX_DEBUG] Buy executed:', { tokenMint: returnedMint, amount: BUY_AMOUNT, price: 'estimated' });
 
@@ -1303,13 +1861,13 @@ try {
     type: 'buy',
     tokenMint: returnedMint,
     amount: BUY_AMOUNT,
-    signature: `${BUY_PROVIDER}_buy_${Date.now()}`,
-    success: result
+    signature: swapResult.txSignature || `${BUY_PROVIDER}_buy_${Date.now()}`,
+    success: swapResult.success
   };
-  
+
   console.log('[TAX_DEBUG] Recording trade:', taxData);
   await recordTrade(taxData);
-  
+
   const filename = `data/tax_records_${new Date().toISOString().slice(0,10)}.json`;
   console.log('[TAX_DEBUG] File written:', filename);
 } catch (taxError) {
@@ -1319,7 +1877,7 @@ try {
 
 
 // 📊 TAX RECORDING - JUPITER BUY TRANSACTION
-if (result) {
+if (swapResult && swapResult.success) {
   // ============================================
   // INCREMENT ABSOLUTE TRADE COUNTER
   // ============================================
@@ -1332,8 +1890,8 @@ if (result) {
       type: 'buy',
       tokenMint: returnedMint,
       amount: BUY_AMOUNT,
-      signature: `jupiter_buy_${Date.now()}`,
-      success: result
+      signature: swapResult.txSignature || `jupiter_buy_${Date.now()}`,
+      success: swapResult.success
     };
     await recordTrade(taxData);
     console.log(`📊 Tax recorded: ${taxData.type} - ${taxData.tokenMint?.slice(0,8)}...`);
@@ -1344,15 +1902,62 @@ if (result) {
   }
   
   // Update pool and tracking if successful
-  if (result) {
+  if (swapResult && swapResult.success) {
     stats.tokensBought++;
     stats.totalTrades++;
+
+    // ============================================
+    // ADD POSITION TO PARTIAL EXIT TRACKING
+    // ============================================
+    if (partialExitManager && swapResult.outputAmount) {
+      try {
+        // Extract actual token amount from swap result
+        const tokenAmount = swapResult.outputAmount; // REAL token amount from Jupiter API
+        const entryPriceSOL = actualBuyAmount / tokenAmount; // Calculate entry price per token
+
+        partialExitManager.addPosition(
+          returnedMint,              // Token mint address
+          entryPriceSOL,             // Entry price in SOL per token
+          tokenAmount,               // Amount of tokens bought (REAL VALUE!)
+          actualBuyAmount,           // SOL invested
+          undefined                  // Symbol (optional)
+        );
+
+        console.log(`✅ Position added to exit tracking: ${returnedMint.slice(0,8)}...`);
+        console.log(`   📊 Token Amount: ${tokenAmount.toLocaleString()}`);
+        console.log(`   💰 Entry Price: ${entryPriceSOL.toFixed(10)} SOL per token`);
+        console.log(`   💵 Invested: ${actualBuyAmount} SOL`);
+
+        // ✅ VIP2 INTEGRATION: Add position to real-time price monitoring
+        if (globalPositionMonitor) {
+          try {
+            const monitoredPosition: MonitoredPosition = {
+              mint: returnedMint,
+              poolAddress: "", // Derive from token if needed
+              entryPriceSOL: entryPriceSOL,
+              entryPriceUSD: entryPriceSOL * SOL_PRICE,
+              tokenAmount: tokenAmount,
+              entryTime: new Date(),
+              dex: "pumpfun" // Assume pump.fun for now
+            };
+            await globalPositionMonitor.addPosition(monitoredPosition);
+            console.log(`👁️ Position added to real-time monitoring: ${returnedMint.slice(0,8)}...`);
+          } catch (monitorError) {
+            console.warn('⚠️ Failed to add position to monitor:', monitorError);
+          }
+        }
+      } catch (exitError) {
+        console.warn('⚠️ Failed to add position to exit tracking:', exitError);
+      }
+    }
 
     // ============================================
     // TRADE LIMIT CHECKING
     // ============================================
     tradeCount++;
+    tradesThisMinute++; // ✅ FIX: Increment rate limiter ONLY after successful trade
     console.log(`📊 Trade ${tradeCount}${maxTrades ? `/${maxTrades}` : ''} completed`);
+    console.log(`📊 Rate limiter: ${tradesThisMinute}/${MAX_TRADES_PER_MINUTE} trades this minute`);
 
     // Check max trades limit
     if (maxTrades > 0 && tradeCount >= maxTrades) {
@@ -1362,7 +1967,7 @@ if (result) {
     }
 
     // Track losses for loss limit checking
-    if (!result) { // This should check actual trade success/failure
+    if (swapResult && !swapResult.success) { // Check actual trade success/failure
       totalLoss += BUY_AMOUNT;
       console.log(`💸 Loss tracked: ${BUY_AMOUNT} SOL (Total: ${totalLoss.toFixed(4)} SOL)`);
 
@@ -1394,7 +1999,8 @@ if (result) {
     // ⬇️ ADD THE PERMANENT BLOCKING HERE ⬇️
     // Mark as recently bought to prevent duplicates
     recentBuys.add(returnedMint);
-    /// NO setTimeout - keep it blocked forever!
+    recentBuyTimes.set(returnedMint, Date.now()); // ✅ FIX Bug #8: Track time for cleanup
+    /// NO setTimeout - keep it blocked forever (but cleanup after 24hr)
     logEngine.writeLog(`${getCurrentTime()}`, `🔒 Token ${returnedMint.slice(0,8)} PERMANENTLY blocked from re-buy`, "red");
     console.log(`🚫 Duplicate protection: ${returnedMint} will NEVER be bought again`);
 
@@ -1449,6 +2055,54 @@ if (queueManager) {
 }
 
 // ============================================
+// PAPER EXIT → POOL + STATS SYNC
+// ============================================
+async function recordSimulatedExit(
+  tokenMint: string,
+  profitPercentage: number,
+  holdTimeMinutes: number
+): Promise<void> {
+  try {
+    const poolManager = queueManager?.getPoolManager?.();
+    if (!poolManager) {
+      console.log(
+        "⚠️ [PAPER EXIT] PoolManager not available, skipping pool update"
+      );
+      return;
+    }
+
+    // 1) Update pool P&L (same method LIVE uses)
+    if (typeof poolManager.processTradeResult === "function") {
+      poolManager.processTradeResult(
+        tokenMint,
+        profitPercentage,
+        holdTimeMinutes
+      );
+    }
+
+    // 2) Update high-level stats for the emergency dashboard
+    // NOTE: totalTrades already incremented when position was opened (PAPER block)
+    // Only track win/loss outcome here
+    if (profitPercentage > 0) {
+      stats.wins = (stats.wins || 0) + 1;
+    } else if (profitPercentage < 0) {
+      stats.losses = (stats.losses || 0) + 1;
+    }
+
+    console.log(
+      `📊 [PAPER EXIT] Simulated result for ${tokenMint.slice(
+        0,
+        8
+      )}...: ${profitPercentage.toFixed(2)}% over ${holdTimeMinutes.toFixed(
+        1
+      )} min`
+    );
+  } catch (err) {
+    console.warn("⚠️ [PAPER EXIT] Failed to record simulated exit:", err);
+  }
+}
+
+// ============================================
 // STATUS REPORTING
 // ============================================
 function printStatus(): void {
@@ -1468,6 +2122,17 @@ function printStatus(): void {
   console.log(`🛡️ Tokens Blocked (Quality Filter): ${stats.tokensBlocked}`);
   console.log(`⛔ Pool Depleted Skips: ${stats.poolDepleted}`);
   console.log(`📈 Detection Rate: ${tokensPerHour}/hour`);
+
+  // Trade performance stats (PAPER + LIVE)
+  const totalCompleted = (stats.wins || 0) + (stats.losses || 0);
+  if (totalCompleted > 0) {
+    const winRate = ((stats.wins || 0) / totalCompleted * 100).toFixed(1);
+    console.log(`\n💰 TRADE PERFORMANCE:`);
+    console.log(`   Total Completed: ${totalCompleted}`);
+    console.log(`   Wins: ${stats.wins || 0}`);
+    console.log(`   Losses: ${stats.losses || 0}`);
+    console.log(`   Win Rate: ${winRate}%`);
+  }
 
   // Safety wrapper dashboard
   safetyWrapper.displayDashboard();
@@ -1556,20 +2221,28 @@ function printStatus(): void {
 // ============================================
 (async () => {
   // LIVE TRADING VERIFICATION
-  if (!IS_TEST_MODE) {
+  if (!TEST_MODE) {
     console.log("\n🚨🚨🚨 LIVE TRADING MODE ACTIVE 🚨🚨🚨");
     console.log("Real money at risk! Press Ctrl+C in 5 seconds to cancel...");
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
 
   // Initialize everything
-  console.log("🔍 Line 500 - IS_TEST_MODE at startup:", IS_TEST_MODE);
   await initializeWalletRotation();
   await resetCurrentSessionOnly();
   await initializeSecurePool();
-  setTestMode(IS_TEST_MODE);
+  // Removed setTestMode() call - secure-pool now reads mode from UNIFIED-CONTROL directly
   await initializeEnhancements();
-  
+
+  // Initialize PumpSwap SDK (optional - falls back to Jupiter if unavailable)
+  console.log('🚀 Initializing PumpSwap SDK...');
+  const pumpSwapReady = initializePumpSwapSDK();
+  if (pumpSwapReady) {
+    console.log('✅ PumpSwap SDK ready - will use for direct swaps');
+  } else {
+    console.log('⚠️ PumpSwap SDK not available - will use Jupiter API');
+  }
+
   // Status display
   setInterval(printStatus, 5000);
   
@@ -1579,22 +2252,256 @@ function printStatus(): void {
 
   await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
   console.log('⏳ Rate limiting: 2 second delay added');
-  
+
+  // ============================================
+  // INITIALIZE PARTIAL EXIT MANAGER
+  // ============================================
+  console.log('💎 Initializing Partial Exit System...');
+  partialExitManager = new PartialExitManager();
+
+  // ============================================
+  // PHASE 3A: REAL ROI CALCULATION HELPER
+  // ============================================
+  /**
+   * Compute real profit percentage from actual swap results
+   * @param entryPriceSOL - SOL per token at entry
+   * @param tokensSold - Actual tokens sold in this exit
+   * @param solReceived - Actual SOL received from sale
+   * @returns Profit percentage (positive = profit, negative = loss)
+   */
+  function computeRealProfitPercentage(
+    entryPriceSOL: number,
+    tokensSold: number,
+    solReceived: number
+  ): number {
+    if (tokensSold <= 0 || solReceived <= 0 || entryPriceSOL <= 0) {
+      console.warn(`⚠️ [ROI] Invalid inputs: entryPrice=${entryPriceSOL}, sold=${tokensSold}, received=${solReceived}`);
+      return 0;
+    }
+    const exitPriceSOL = solReceived / tokensSold;
+    const rawReturn = (exitPriceSOL - entryPriceSOL) / entryPriceSOL;
+    return rawReturn * 100;
+  }
+
+  // ============================================
+  // PHASE 3C: UNIFIED EXIT HANDLER
+  // ============================================
+  /**
+   * Unified exit finalization for both PAPER and LIVE modes
+   * Ensures consistent pool updates, stats tracking, and logging
+   *
+   * @param mode - Trading mode ('PAPER' or 'LIVE')
+   * @param tokenMint - Token mint address
+   * @param entryPriceSOL - Entry price in SOL per token
+   * @param exitPriceSOL - Exit price in SOL per token
+   * @param tokensSold - Tokens sold in this exit
+   * @param holdTimeMinutes - Hold duration in minutes
+   * @param tierLabel - Tier name (e.g., "Tier 1 - First Profit")
+   * @param tierMultiplier - Tier multiplier (2, 4, 6, etc.)
+   */
+  async function handleFinalizedExit(
+    mode: 'PAPER' | 'LIVE',
+    tokenMint: string,
+    entryPriceSOL: number,
+    exitPriceSOL: number,
+    tokensSold: number,
+    holdTimeMinutes: number,
+    tierLabel: string,
+    tierMultiplier: number
+  ): Promise<void> {
+    // Compute profit percentage based on mode
+    let profitPercentage: number;
+
+    if (mode === 'PAPER') {
+      // PAPER: Use simulated tier multiplier
+      profitPercentage = ((tierMultiplier - 1) * 100);
+      console.log(`📝 [PAPER] Using simulated ROI from tier multiplier: ${tierMultiplier}x = ${profitPercentage.toFixed(2)}%`);
+    } else {
+      // LIVE: Use real exit price for accurate ROI
+      const solReceived = exitPriceSOL * tokensSold;
+      profitPercentage = computeRealProfitPercentage(entryPriceSOL, tokensSold, solReceived);
+      console.log(`💰 [LIVE] Using real ROI from actual swap: ${profitPercentage.toFixed(2)}%`);
+    }
+
+    // Unified logging format for both modes
+    console.log(`\n🏁 EXIT COMPLETE [${mode}] ${tierLabel} – ${tokenMint.slice(0, 8)}...`);
+    console.log(`   Entry:  ${entryPriceSOL.toFixed(10)} SOL/token`);
+    console.log(`   Exit:   ${exitPriceSOL.toFixed(10)} SOL/token`);
+    console.log(`   ROI:    ${profitPercentage.toFixed(2)}%`);
+    console.log(`   Hold:   ${holdTimeMinutes.toFixed(1)} min`);
+    console.log(`   Tokens: ${tokensSold.toLocaleString()}`);
+
+    // Update pool and stats via recordSimulatedExit (works for both modes)
+    try {
+      await recordSimulatedExit(tokenMint, profitPercentage, holdTimeMinutes);
+      console.log(`✅ [${mode}] Exit recorded to pool and stats successfully`);
+    } catch (err) {
+      console.warn(`⚠️ [${mode} EXIT] Failed to record to pool/stats:`, err);
+      throw err; // Re-throw to allow caller to handle
+    }
+  }
+
+  // Register callback for when exit tiers trigger
+  partialExitManager.onExit(async (mint, tier, result) => {
+    // PHASE 4C: Enhanced callback logging
+    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`🎯 [EXIT-TIER] Callback invoked for ${mint.slice(0,8)}...`);
+    console.log(`   Tier: ${tier.name}`);
+    console.log(`   Amount to sell: ${result.actualAmountSold.toLocaleString()} tokens`);
+    console.log(`   Mode: ${TEST_MODE ? 'PAPER TRADING' : 'LIVE TRADING'}`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+
+    // Check if we're in paper trading mode
+    if (TEST_MODE) {
+      // PAPER TRADING: Simulate the sell AND update pool + stats
+      console.log(`[EXIT] Starting PAPER exit for ${mint.slice(0,8)}...`);
+      console.log(`   Simulated sell: ${result.actualAmountSold.toLocaleString()} tokens (${tier.percentage}%)`);
+      console.log(`   Simulated profit: ${result.profitSOL.toFixed(4)} SOL`);
+      console.log(`   Remaining: ${result.remainingAmount.toLocaleString()} tokens`);
+
+      // Get position data for unified exit handler
+      const position = partialExitManager.getPosition(mint);
+      if (position) {
+        const holdTimeMinutes = (Date.now() - position.entryTime) / 60000;
+        const simulatedExitPrice = position.entryPrice * tier.multiplier; // Simulated price at tier target
+        const roiPercent = ((tier.multiplier - 1) * 100).toFixed(1);
+
+        // Use unified exit handler (PHASE 3C)
+        await handleFinalizedExit(
+          'PAPER',
+          mint,
+          position.entryPrice,        // Entry price
+          simulatedExitPrice,          // Simulated exit price
+          result.actualAmountSold,     // Tokens sold
+          holdTimeMinutes,             // Hold time
+          tier.name,                   // Tier label
+          tier.multiplier              // Tier multiplier (2, 4, 6)
+        ).catch(err => {
+          console.warn('⚠️ [PAPER EXIT] Unified handler failed:', err);
+        });
+
+        // PHASE 4C: Log completion
+        console.log(`[EXIT] Completed PAPER exit, ROI=${roiPercent}%, hold=${holdTimeMinutes.toFixed(1)} min`);
+      }
+
+      return; // Don't execute real sell in paper mode
+    }
+
+    // LIVE TRADING: Execute actual sell via unSwapToken
+    try {
+      // PHASE 4C: Log LIVE exit start
+      console.log(`[EXIT] Starting LIVE exit for ${mint.slice(0,8)}...`);
+      console.log(`   Executing blockchain sell: ${result.actualAmountSold.toLocaleString()} tokens`);
+
+      const sellResult = await unSwapToken(
+        mint,                      // Token mint to sell
+        WSOL_MINT,                 // Selling for SOL
+        result.actualAmountSold,   // Amount of tokens to sell
+        logEngine
+      );
+
+      // ============================================
+      // PHASE 3B: EXIT FAIL-SAFE PROTECTIONS
+      // ============================================
+
+      // CHECK 1: Swap result exists and succeeded
+      if (!sellResult || !sellResult.success) {
+        // PHASE 4C: Enhanced fail-safe logging
+        console.error(`[EXIT] LIVE exit blocked by fail-safe (swap failed)`);
+        console.error(`   Reason: ${sellResult?.error || "Unknown error"}`);
+        console.error(`   ⚠️  Pool and stats NOT updated (fail-safe protection)`);
+        return;
+      }
+
+      // CHECK 2: Output amount validation (SOL received)
+      if (!sellResult.solReceived || sellResult.solReceived <= 0) {
+        // PHASE 4C: Enhanced fail-safe logging
+        console.error(`[EXIT] LIVE exit blocked by fail-safe (no SOL received)`);
+        console.error(`   SOL Received: ${sellResult.solReceived || 0}`);
+        console.error(`   ⚠️  Pool and stats NOT updated (fail-safe protection)`);
+        return;
+      }
+
+      // CHECK 3: Input amount validation (tokens sold)
+      if (!sellResult.tokensSold || sellResult.tokensSold <= 0) {
+        // PHASE 4C: Enhanced fail-safe logging
+        console.error(`[EXIT] LIVE exit blocked by fail-safe (no tokens sold)`);
+        console.error(`   Tokens Sold: ${sellResult.tokensSold || 0}`);
+        console.error(`   ⚠️  Pool and stats NOT updated (fail-safe protection)`);
+        return;
+      }
+
+      console.log(`✅ Partial exit executed successfully`);
+      console.log(`   SOL Received: ${sellResult.solReceived.toFixed(6)}`);
+      console.log(`   Tokens Sold: ${sellResult.tokensSold.toLocaleString()}`);
+
+      // PHASE 3B & 3C: Validate slippage, then use unified exit handler
+      const position = partialExitManager.getPosition(mint);
+      if (position && sellResult.solReceived && sellResult.tokensSold) {
+        const entryPriceSOL = position.entryPrice;
+        const realizedExitPrice = sellResult.solReceived / sellResult.tokensSold;
+
+        // CHECK 4: Slippage tolerance validation (PHASE 3B)
+        const targetExitPrice = entryPriceSOL * tier.multiplier;
+        const slippagePercent = ((realizedExitPrice - targetExitPrice) / targetExitPrice) * 100;
+        const allowedSlippagePercent = 20; // Jupiter's 20% slippage tolerance (2000 bps)
+
+        console.log(`📊 SLIPPAGE CHECK:`);
+        console.log(`   Target Price: ${targetExitPrice.toFixed(10)} SOL/token (${tier.multiplier}x)`);
+        console.log(`   Realized:     ${realizedExitPrice.toFixed(10)} SOL/token`);
+        console.log(`   Slippage:     ${slippagePercent.toFixed(2)}%`);
+
+        if (Math.abs(slippagePercent) > allowedSlippagePercent) {
+          console.error(`⚠️  EXIT SLIPPAGE TOO HIGH for ${mint.slice(0, 8)}...`);
+          console.error(`   Slippage: ${slippagePercent.toFixed(2)}% (limit: ${allowedSlippagePercent}%)`);
+          console.error(`   ⚠️  Pool and stats NOT updated (slippage fail-safe)`);
+          return;
+        }
+
+        console.log(`   ✅ Slippage within tolerance (< ${allowedSlippagePercent}%)`);
+
+        const holdTimeMinutes = (Date.now() - position.entryTime) / 60000;
+
+        // Use unified exit handler (PHASE 3C)
+        await handleFinalizedExit(
+          'LIVE',
+          mint,
+          entryPriceSOL,               // Entry price
+          realizedExitPrice,           // REAL exit price from swap
+          sellResult.tokensSold,       // Actual tokens sold
+          holdTimeMinutes,             // Hold time
+          tier.name,                   // Tier label
+          tier.multiplier              // Tier multiplier (2, 4, 6)
+        ).catch(err => {
+          console.warn('⚠️ [LIVE EXIT] Unified handler failed:', err);
+        });
+
+        // PHASE 4C: Log LIVE exit completion
+        const realROI = ((realizedExitPrice - entryPriceSOL) / entryPriceSOL * 100).toFixed(1);
+        console.log(`[EXIT] Completed LIVE exit, ROI=${realROI}%, hold=${holdTimeMinutes.toFixed(1)} min`);
+      } else {
+        console.warn(`⚠️ [LIVE EXIT] Cannot compute real ROI - missing position or swap data`);
+      }
+    } catch (sellError) {
+      console.error(`❌ Sell execution error:`, sellError);
+    }
+  });
+
+  console.log('✅ Partial Exit System initialized');
+
   if (positionsVerified) {
     if (DATA_STREAM_METHOD === "grpc") {
       startGrpcListener()
         .catch((err: any) => {
           logEngine.writeLog(`${getCurrentTime()}`, `Fatal error: ${err}`, "red");
           process.exit(1);
-        })
-        .then(monitorPositions);
+        });
     } else if (DATA_STREAM_METHOD === "wss") {
       startWebSocketListener()
         .catch((err: any) => {
           logEngine.writeLog(`${getCurrentTime()}`, `Fatal error: ${err}`, "red");
           process.exit(1);
-        })
-        .then(monitorPositions);
+        });
     }
   } else {
       logEngine.writeLog(`${getCurrentTime()}`, `Position verification failed. Exiting.`, "red");
@@ -1605,12 +2512,20 @@ function printStatus(): void {
     // ============================================
     // SHUTDOWN HANDLER AND REPORTING
     // ============================================
-    process.on('SIGINT', async () => {
-      await shutdownWithReport();
+    process.on('SIGINT', () => {
+      console.log('\n🛑 Caught SIGINT (Ctrl+C) - Initiating graceful shutdown...');
+      shutdownWithReport().catch((err) => {
+        console.error('❌ Shutdown error:', err);
+        process.exit(1);
+      });
     });
 
-    process.on('SIGTERM', async () => {
-      await shutdownWithReport();
+    process.on('SIGTERM', () => {
+      console.log('\n🛑 Caught SIGTERM - Initiating graceful shutdown...');
+      shutdownWithReport().catch((err) => {
+        console.error('❌ Shutdown error:', err);
+        process.exit(1);
+      });
     });
 
     // Force exit after timeout

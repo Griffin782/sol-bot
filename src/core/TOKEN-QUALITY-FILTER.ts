@@ -3,6 +3,7 @@
 
 import axios from 'axios';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { Metaplex } from '@metaplex-foundation/js';
 import { validateEnv } from '../utils/env-validator';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -307,18 +308,85 @@ interface QualityResult {
 }
 
 async function getTokenInfo(tokenMint: string): Promise<TokenInfo> {
+  console.log('[TOKEN-INFO] Fetching metadata for: ' + tokenMint.slice(0, 8) + '...');
+
   try {
-    // Simplified token info - in real implementation would fetch from Jupiter API
-    return {
-      name: `Token${tokenMint.slice(0, 4)}`,
-      symbol: `T${tokenMint.slice(0, 3)}`,
-      decimals: 9,
-      supply: 1000000000,
-      creator: 'unknown'
-    };
-  } catch (error) {
-    throw new Error(`Could not fetch token info: ${error.message}`);
+    // METHOD 1: Try Metaplex (on-chain metadata - most reliable)
+    console.log('[TOKEN-INFO] Attempting Metaplex fetch...');
+    const env = validateEnv();
+    const connection = new Connection(env.RPC_HTTPS_URI, 'confirmed');
+    const metaplex = Metaplex.make(connection);
+    const mintAddress = new PublicKey(tokenMint);
+
+    const nft = await metaplex.nfts().findByMint({ mintAddress });
+
+    if (nft && nft.name) {
+      console.log('[TOKEN-INFO] ✅ Metaplex success: "' + nft.name + '" (' + (nft.symbol || '') + ')');
+      return {
+        name: nft.name,
+        symbol: nft.symbol || '',
+        decimals: 9,
+        supply: 0,
+        creator: nft.creators?.[0]?.address?.toString() || 'unknown'
+      };
+    }
+  } catch (error: any) {
+    console.log('[TOKEN-INFO] Metaplex fetch failed: ' + error.message);
   }
+
+  try {
+    // METHOD 2: Try Jupiter API (fallback)
+    console.log('[TOKEN-INFO] Attempting Jupiter API fetch...');
+    const response = await axios.get(
+      `https://tokens.jup.ag/token/${tokenMint}`,
+      { timeout: 5000 }
+    );
+
+    if (response.data && response.data.name) {
+      console.log('[TOKEN-INFO] ✅ Jupiter success: "' + response.data.name + '" (' + response.data.symbol + ')');
+      return {
+        name: response.data.name || '',
+        symbol: response.data.symbol || '',
+        decimals: response.data.decimals || 9,
+        supply: response.data.supply || 0,
+        creator: 'unknown'
+      };
+    }
+  } catch (error: any) {
+    console.log('[TOKEN-INFO] Jupiter fetch failed: ' + error.message);
+  }
+
+  try {
+    // METHOD 3: Try Solscan API (last resort)
+    console.log('[TOKEN-INFO] Attempting Solscan API fetch...');
+    const response = await axios.get(
+      `https://public-api.solscan.io/token/meta?tokenAddress=${tokenMint}`,
+      { timeout: 5000 }
+    );
+
+    if (response.data && response.data.name) {
+      console.log('[TOKEN-INFO] ✅ Solscan success: "' + response.data.name + '" (' + response.data.symbol + ')');
+      return {
+        name: response.data.name || '',
+        symbol: response.data.symbol || '',
+        decimals: response.data.decimals || 9,
+        supply: response.data.supply || 0,
+        creator: 'unknown'
+      };
+    }
+  } catch (error: any) {
+    console.log('[TOKEN-INFO] Solscan fetch failed: ' + error.message);
+  }
+
+  // If all methods fail, return empty (will be blocked by quality filter)
+  console.log('[TOKEN-INFO] ❌ All metadata sources failed - returning empty');
+  return {
+    name: '',
+    symbol: '',
+    decimals: 9,
+    supply: 0,
+    creator: 'unknown'
+  };
 }
 
 export async function getTokenQualityScore(tokenMint: string): Promise<QualityResult> {
@@ -336,10 +404,19 @@ export async function getTokenQualityScore(tokenMint: string): Promise<QualityRe
   try {
     // 1. INSTANT BLOCKS (don't waste API calls)
     const tokenInfo = await getTokenInfo(tokenMint);
+
+    // DEBUG: Log the actual token metadata we received
+    console.log('[QUALITY-FILTER-DEBUG] Token Metadata Received:');
+    console.log('[QUALITY-FILTER-DEBUG]   Name: "' + tokenInfo.name + '"');
+    console.log('[QUALITY-FILTER-DEBUG]   Symbol: "' + tokenInfo.symbol + '"');
+
     const nameSymbol = (tokenInfo.name + ' ' + tokenInfo.symbol).toLowerCase();
+    console.log('[QUALITY-FILTER-DEBUG]   Search String: "' + nameSymbol + '"');
 
     // Check for scam words
     const blockedWords = INSTANT_BLOCK_WORDS.filter(word => nameSymbol.includes(word));
+    console.log('[QUALITY-FILTER-DEBUG]   Scam Words Detected: ' +
+      (blockedWords.length > 0 ? blockedWords.join(', ') : 'NONE'));
     if (blockedWords.length > 0) {
       return {
         shouldBuy: false,
@@ -427,6 +504,20 @@ export async function getTokenQualityScore(tokenMint: string): Promise<QualityRe
 
     // 4. Calculate final score
     const totalScore = Object.values(breakdown).reduce((sum, val) => sum + val, 0);
+
+  // Debug logging for score breakdown (FIXED: Use correct variable names)
+  console.log(`[QUALITY-FILTER-DEBUG] Score Breakdown:`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Scam Patterns: ${breakdown.scamPatterns || 0}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Liquidity: ${breakdown.liquidity || 0}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Holders: ${breakdown.holders || 0}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Sellable: ${breakdown.sellable || 0}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Age: ${breakdown.age || 0}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Momentum: ${breakdown.momentum || 0}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Total Score: ${totalScore}`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Required: 65`);
+  console.log(`[QUALITY-FILTER-DEBUG]   Result: ${totalScore >= 65 ? 'PASS ✅' : 'FAIL ❌'}`);
+  console.log(`[QUALITY-FILTER-DEBUG] ============================================`);
+
 
     // 5. Final decision
     const shouldBuy = totalScore >= 65;  // Need 65+ score to buy
@@ -576,6 +667,13 @@ export async function enforceQualityFilter(
   });
 
   if (result.shouldBuy) {
+  // ============================================================================
+  // DEBUG LOGGING - Added by comprehensive-fix-script.js
+  // ============================================================================
+  console.log(`[QUALITY-FILTER-DEBUG] ============================================`);
+  console.log(`[QUALITY-FILTER-DEBUG] Checking token: ${tokenMint}`);
+  console.log(`[QUALITY-FILTER-DEBUG] Timestamp: ${new Date().toISOString()}`);
+
     console.log(`✅ QUALITY PASSED: Score ${result.score.toFixed(1)}/100`);
     console.log(`   📊 Breakdown: Scam(${result.breakdown.scamPatterns}) + Liq(${result.breakdown.liquidity}) + Holders(${result.breakdown.holders}) + Sell(${result.breakdown.sellable}) + Age(${result.breakdown.age}) + Mom(${result.breakdown.momentum})`);
     result.reasons.forEach(r => console.log(`   ✓ ${r}`));
@@ -597,6 +695,11 @@ export async function enforceQualityFilter(
   if (qualityStats.totalChecked % 20 === 0) {
     printQualityStats();
   }
+
+  console.log('[QUALITY-FILTER-DEBUG] ==================== DECISION ====================');
+  console.log('[QUALITY-FILTER-DEBUG] Result: ' + (result.shouldBuy ? 'PASS ✅' : 'BLOCK ❌'));
+  console.log('[QUALITY-FILTER-DEBUG] Score: ' + result.score.toFixed(1) + '/100');
+  console.log('[QUALITY-FILTER-DEBUG] ====================================================');
 
   return result.shouldBuy;
 }

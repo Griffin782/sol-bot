@@ -9,6 +9,7 @@
 **/privateKey.json
 **/*private*key*
 **/*api*key*
+wallet-pool.json
 
 # Node modules
 node_modules/
@@ -56,7 +57,12 @@ tmp/
 *.backup
 *.bak
 *.old
+.env.backup-*
 
 # CSV monitoring data
 csv-monitoring/*.csv
 monitored-wallets/*.csv
+
+# Exclude Windows nul files
+nul
+**/nul

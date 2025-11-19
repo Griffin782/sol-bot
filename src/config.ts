@@ -22,7 +22,7 @@ export const config = {
     ],
     wallet: [
       {
-        key: "EmKj5PB2V6QHQ3uD2NkwGSEum3C5z61p8ehWAGyMcBUV",
+        key: process.env.WALLET_ADDRESS || '',
         name: "MainWallet",
         enabled: false,
       },
@@ -39,7 +39,7 @@ export const config = {
   
   // Token buy configuration with Pool integration
   token_buy: {
-    provider: "jupiter", // jupiter or sniperoo
+    provider: "pumpswap", // pumpswap (on-chain), jupiter (API), or sniperoo
     sol_amount: MASTER_SETTINGS.pool.positionSizeSOL, 
     jupiter: {
       slippageBps: 2000,

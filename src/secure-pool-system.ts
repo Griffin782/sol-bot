@@ -3,16 +3,15 @@
 // ============================================
 import axios from 'axios';
 import * as fs from 'fs';  // ADD THIS LINE
-import { MASTER_SETTINGS } from './core/UNIFIED-CONTROL';
+import { MASTER_SETTINGS, getCurrentMode, TradingMode } from './core/UNIFIED-CONTROL';
 // z_config import removed - using UNIFIED-CONTROL
 
-// ADD THESE LINES - Global variables that will be set by index.ts
-let IS_TEST_MODE = false;
+// Removed hardcoded IS_TEST_MODE variable - now reads from UNIFIED-CONTROL
+// Removed setTestMode() function - no longer needed
 
-// Export a function to set the test mode
-export function setTestMode(testMode: boolean): void {
-  IS_TEST_MODE = false; // FORCE LIVE MODE
-  console.log("🔒 Secure Pool: Ignoring test mode request, forcing LIVE");
+// Helper function to check if in test mode
+export function isTestMode(): boolean {
+  return getCurrentMode() === TradingMode.PAPER;
 }
 
 
@@ -116,12 +115,10 @@ async function startPriceUpdater(): Promise<void> {
 // CALCULATE POSITION SIZE IN SOL
 // ============================================
 export function calculatePositionSizeInSOL(): number {
-  // Use UNIFIED-CONTROL position size
-  const configPositionSOL = MASTER_SETTINGS.pool.positionSizeSOL;
-
-  // Return the config value directly (it's already in SOL)
-  return 0.05; // HARDCODED SUCCESS - DO NOT CHANGE - SEE WINNING_CONFIG.md
+  // Always return the authoritative value from UNIFIED-CONTROL
+  return MASTER_SETTINGS.pool.positionSizeSOL;
 }
+
 
 // ============================================
 // SECURITY WITHDRAWAL FUNCTION
@@ -158,7 +155,7 @@ export async function checkForSecureWithdrawal(poolManager: any): Promise<boolea
       const transferSuccess = await integrateTransferSystem(
         poolManager,
         currentSecureSession,
-        IS_TEST_MODE
+        isTestMode()
       );
       
       if (!transferSuccess) {
@@ -249,7 +246,7 @@ export function displaySecurePoolStatus(): void {
   
   console.log(`\n🔒 SECURE TRADING STATUS:`);
   console.log(`   Session: ${currentSecureSession.sessionNumber}`);
-  console.log(`   Position Size: $${currentSecureSession.positionSizeUSD} (${solPositionSize} SOL)`);
+  console.log(`   Position Size: $${MASTER_SETTINGS.pool.positionSizeUSD} (${solPositionSize} SOL)`);
   console.log(`   SOL Price: $${currentSOLPrice.toFixed(2)} (${priceAge})`);
   console.log(`   Withdrawal Trigger: $${currentSecureSession.tradingPoolMax.toLocaleString()}`);
   console.log(`   Withdrawals Made: ${withdrawalCount}`);

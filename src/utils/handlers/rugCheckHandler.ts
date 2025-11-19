@@ -1,5 +1,5 @@
 import axios from "axios";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 import { config } from "../../config";
 import { RugResponseExtended, NewTokenRecord } from "../../types";
 import { insertNewToken, selectTokenByNameAndCreator } from "../../tracker/db";

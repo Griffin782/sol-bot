@@ -1,0 +1,770 @@
+// ============================================
+// MARKET RECORDER - Core Recording Engine
+// Integrates with existing bot's WebSocket detection
+// Records 1s chart data for all detected tokens
+// ============================================
+
+import { Connection, PublicKey } from '@solana/web3.js';
+import * as sqlite3 from 'sqlite3';
+import { open, Database } from 'sqlite';
+import { EventEmitter } from 'events';
+import { 
+  MarketIntelligenceConfig, 
+  getMarketIntelligenceConfig, 
+  getCurrentDatabasePath,
+  shouldRecordToken 
+} from '../config/mi-config';
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Sanitize strings to remove broken unicode/emojis
+ * Prevents JSON encoding errors and SQLite issues
+ *
+ * @param str - Input string that may contain broken unicode
+ * @returns Clean string safe for database and JSON
+ */
+function sanitizeString(str: string | undefined | null): string {
+  if (!str) return '';
+
+  try {
+    // Remove broken unicode surrogates (causes "no low surrogate" error)
+    let clean = str.replace(/[\uD800-\uDFFF]/g, '');
+
+    // Remove any remaining problematic characters
+    clean = clean.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
+
+    // Trim whitespace and limit length
+    return clean.trim().slice(0, 100);
+  } catch (error) {
+    console.warn('String sanitization error:', error);
+    return 'ENCODING_ERROR';
+  }
+}
+
+// ============================================
+// INTERFACES
+// ============================================
+
+export interface DetectedToken {
+  mint: string;
+  timestamp: number;
+  detection_method: 'websocket' | 'grpc';
+  detection_program?: string;  // 'Raydium', 'Pump.fun', etc.
+  
+  // Initial market data
+  initial_price?: number;
+  initial_liquidity?: number;
+  initial_volume_24h?: number;
+  initial_holder_count?: number;
+  initial_market_cap?: number;
+  
+  // Token metadata
+  name?: string;
+  symbol?: string;
+  creator?: string;
+}
+
+export interface TokenScore {
+  mint: string;
+  score: number;
+  would_buy: boolean;
+  would_buy_reason?: string;
+  blocked_reason?: string;
+  
+  // Safety checks
+  has_mint_authority: boolean;
+  has_freeze_authority: boolean;
+  rugcheck_score?: number;
+}
+
+export interface PriceUpdate {
+  mint: string;
+  timestamp: number;
+  price: number;
+  volume_1s?: number;
+  liquidity?: number;
+  holder_count?: number;
+  market_cap?: number;
+  
+  // Calculated fields
+  price_change_1s?: number;
+  gain_from_entry?: number;
+  high_since_entry?: number;
+}
+
+export interface TrackedPosition {
+  mint: string;
+  detected_at: number;
+  entry_score: number;
+  simulated_buy_price: number;
+  simulated_position_size: number;
+  simulated_token_amount: number;
+  
+  // Tracking state
+  tracking_status: 'active' | 'exited' | 'timed_out';
+  tracking_started: number;
+  tracking_ended?: number;
+  
+  // Real-time state
+  current_price: number;
+  current_gain_percent: number;
+  high_price: number;
+  high_gain_percent: number;
+  hold_duration_seconds: number;
+  
+  // Exit tracking
+  exit_signal_type?: string;
+  exit_price?: number;
+  exit_time?: number;
+  theoretical_pnl_percent?: number;
+  theoretical_pnl_sol?: number;
+  
+  // Post-exit tracking
+  post_exit_monitoring: boolean;
+  post_exit_high_price?: number;
+  post_exit_high_time?: number;
+  missed_opportunity_percent?: number;
+  post_exit_rally?: boolean;
+  
+  // Tiered exit state
+  remaining_position: number;  // 1.0, 0.75, 0.50, 0.25
+  last_tier_exited?: number;   // 1, 2, 3
+}
+
+// ============================================
+// MARKET RECORDER CLASS
+// ============================================
+
+export class MarketRecorder extends EventEmitter {
+  private config: MarketIntelligenceConfig;
+  private connection: Connection;
+  private db: Database | null = null;
+  
+  // Active tracking
+  private trackedPositions: Map<string, TrackedPosition> = new Map();
+  private priceUpdateIntervals: Map<string, NodeJS.Timeout> = new Map();
+  
+  // Batch writing for performance
+  private writeQueue: {
+    table: string;
+    data: any;
+  }[] = [];
+  
+  private flushInterval: NodeJS.Timeout | null = null;
+  private isRunning: boolean = false;
+  
+  // Statistics
+  private stats = {
+    tokens_detected: 0,
+    tokens_scored: 0,
+    tokens_tracked: 0,
+    tokens_blocked: 0,
+    positions_exited: 0,
+    database_writes: 0,
+  };
+
+  constructor(connection: Connection, config?: MarketIntelligenceConfig) {
+    super();
+    this.connection = connection;
+    this.config = config || getMarketIntelligenceConfig();
+  }
+
+  // ============================================
+  // INITIALIZATION & SHUTDOWN
+  // ============================================
+
+  async initialize(): Promise<void> {
+    if (this.isRunning) {
+      console.log('📊 Market Recorder already running');
+      return;
+    }
+
+    console.log('📊 Initializing Market Intelligence Recorder...');
+    
+    // Initialize database
+    await this.initializeDatabase();
+    
+    // Start batch flush interval
+    this.startBatchFlush();
+    
+    this.isRunning = true;
+    
+    console.log('✅ Market Recorder initialized successfully');
+    console.log(`📁 Database: ${getCurrentDatabasePath()}`);
+    console.log(`🎯 Min Score to Track: ${this.config.scoring.min_score_to_track}`);
+    console.log(`⏱️  Check Interval: ${this.config.exit_simulation.check_interval}s`);
+    
+    this.emit('recorder_started');
+  }
+
+  async shutdown(): Promise<void> {
+    if (!this.isRunning) return;
+    
+    console.log('📊 Shutting down Market Recorder...');
+    
+    // Stop all price monitoring
+    for (const [mint, interval] of this.priceUpdateIntervals) {
+      clearInterval(interval);
+    }
+    this.priceUpdateIntervals.clear();
+    
+    // Stop batch flush
+    if (this.flushInterval) {
+      clearInterval(this.flushInterval);
+    }
+    
+    // Flush any remaining writes
+    await this.flushWriteQueue();
+    
+    // Close database
+    if (this.db) {
+      await this.db.close();
+    }
+    
+    this.isRunning = false;
+    console.log('✅ Market Recorder shut down successfully');
+    console.log(`📊 Final Stats: ${JSON.stringify(this.stats, null, 2)}`);
+    
+    this.emit('recorder_stopped');
+  }
+
+  // ============================================
+  // DATABASE MANAGEMENT
+  // ============================================
+
+  private async initializeDatabase(): Promise<void> {
+    const dbPath = getCurrentDatabasePath();
+    
+    // Create database directory if doesn't exist
+    const fs = require('fs');
+    const path = require('path');
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
+    // Open database
+    this.db = await open({
+      filename: dbPath,
+      driver: sqlite3.Database
+    });
+    
+    // Load schema
+    const schemaPath = path.join(__dirname, '../database/schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      await this.db.exec(schema);
+      console.log('✅ Database schema loaded');
+    } else {
+      console.warn('⚠️  Schema file not found, using existing database structure');
+    }
+  }
+
+  // ============================================
+  // TOKEN DETECTION HANDLING
+  // ============================================
+
+  /**
+   * Main entry point - called when bot detects a new token
+   * This integrates with existing WebSocket detection in index.ts
+   */
+  public async onTokenDetected(token: DetectedToken, score: TokenScore): Promise<void> {
+    if (!this.isRunning || !this.config.recording.enabled) return;
+    
+    this.stats.tokens_detected++;
+    this.stats.tokens_scored++;
+    
+    const dateOnly = new Date().toISOString().split('T')[0];
+    
+    // ALWAYS record to tokens_scored table (even if we won't buy)
+    // BUG FIX: Sanitize strings to prevent unicode/emoji encoding errors
+    this.queueWrite('tokens_scored', {
+      timestamp: new Date(token.timestamp).toISOString(),
+      date_only: dateOnly,
+      mint: token.mint,
+      name: sanitizeString(token.name),
+      symbol: sanitizeString(token.symbol),
+      creator: sanitizeString(token.creator),
+      detection_method: token.detection_method,
+      detection_program: sanitizeString(token.detection_program),
+      initial_price: token.initial_price || 0,
+      initial_liquidity: token.initial_liquidity || 0,
+      initial_volume_24h: token.initial_volume_24h || 0,
+      initial_holder_count: token.initial_holder_count || 0,
+      initial_market_cap: token.initial_market_cap || 0,
+      score: score.score,
+      would_buy: score.would_buy,
+      would_buy_reason: score.would_buy_reason || '',
+      blocked_reason: score.blocked_reason || '',
+      has_mint_authority: score.has_mint_authority,
+      has_freeze_authority: score.has_freeze_authority,
+      rugcheck_score: score.rugcheck_score || 0
+    });
+    
+    // If token passes scoring, start tracking it
+    if (score.would_buy && shouldRecordToken(score.score, this.config)) {
+      await this.startTrackingToken(token, score);
+    } else {
+      this.stats.tokens_blocked++;
+    }
+    
+    // Emit event for monitoring
+    this.emit('token_detected', { token, score });
+  }
+
+  // ============================================
+  // TOKEN TRACKING
+  // ============================================
+
+  private async startTrackingToken(token: DetectedToken, score: TokenScore): Promise<void> {
+    // BUG FIX: Check if token is already being tracked (prevent duplicate constraint violation)
+    try {
+      const existing = await this.db.get(
+        'SELECT mint, tracking_status FROM tokens_tracked WHERE mint = ?',
+        [token.mint]
+      );
+
+      if (existing) {
+        if (existing.tracking_status === 'active') {
+          console.log(`⏭️  Token ${token.mint.slice(0, 8)}... already being tracked (active)`);
+          return; // Don't insert duplicate
+        } else {
+          // Token was previously tracked but exited - this is a re-appearance
+          console.log(`🔄 Token ${token.mint.slice(0, 8)}... re-appeared after exit`);
+          // Continue with tracking (will update existing record or create new entry)
+        }
+      }
+    } catch (error) {
+      console.warn('Error checking existing token:', error);
+      // Continue anyway - let database handle constraint if needed
+    }
+
+    this.stats.tokens_tracked++;
+
+    const position: TrackedPosition = {
+      mint: token.mint,
+      detected_at: token.timestamp,
+      entry_score: score.score,
+      simulated_buy_price: token.initial_price || 0,
+      simulated_position_size: this.config.backtesting.default_position_size,
+      simulated_token_amount: 0,  // Would calculate based on price
+      
+      tracking_status: 'active',
+      tracking_started: Date.now(),
+      
+      current_price: token.initial_price || 0,
+      current_gain_percent: 0,
+      high_price: token.initial_price || 0,
+      high_gain_percent: 0,
+      hold_duration_seconds: 0,
+      
+      post_exit_monitoring: false,
+      remaining_position: 1.0,  // 100% position
+    };
+    
+    // Calculate simulated token amount
+    if (token.initial_price && token.initial_price > 0) {
+      position.simulated_token_amount = position.simulated_position_size / token.initial_price;
+    }
+    
+    this.trackedPositions.set(token.mint, position);
+    
+    // Record to database
+    const dateOnly = new Date().toISOString().split('T')[0];
+    this.queueWrite('tokens_tracked', {
+      mint: token.mint,
+      date_only: dateOnly,
+      detected_at: new Date(token.timestamp).toISOString(),
+      entry_score: score.score,
+      simulated_buy_price: position.simulated_buy_price,
+      simulated_position_size: position.simulated_position_size,
+      simulated_token_amount: position.simulated_token_amount,
+      tracking_status: 'active',
+      tracking_started: new Date(position.tracking_started).toISOString()
+    });
+    
+    // Start 1-second price monitoring
+    this.startPriceMonitoring(token.mint);
+    
+    console.log(`📈 Started tracking: ${token.symbol || token.mint.slice(0, 8)} (Score: ${score.score})`);
+    
+    this.emit('tracking_started', { mint: token.mint, score: score.score });
+  }
+
+  //============================================
+  // PRICE MONITORING (1-SECOND INTERVALS)
+  // ============================================
+
+  private startPriceMonitoring(mint: string): void {
+    const interval = setInterval(async () => {
+      await this.updateTokenPrice(mint);
+    }, 1000);  // Every 1 second
+    
+    this.priceUpdateIntervals.set(mint, interval);
+  }
+
+  private async updateTokenPrice(mint: string): Promise<void> {
+    const position = this.trackedPositions.get(mint);
+    if (!position) return;
+    
+    try {
+      // TODO: Get actual price from your price feed
+      // For now, simulate price updates
+      const currentPrice = await this.getCurrentPrice(mint);
+      if (!currentPrice) return;
+      
+      // Update position state
+      const previousPrice = position.current_price;
+      position.current_price = currentPrice;
+      position.hold_duration_seconds = Math.floor((Date.now() - position.tracking_started) / 1000);
+      
+      // Calculate gains
+      if (position.simulated_buy_price > 0) {
+        position.current_gain_percent = 
+          ((currentPrice - position.simulated_buy_price) / position.simulated_buy_price) * 100;
+        
+        if (currentPrice > position.high_price) {
+          position.high_price = currentPrice;
+          position.high_gain_percent = position.current_gain_percent;
+        }
+      }
+      
+      // Record 1s price data
+      const dateOnly = new Date().toISOString().split('T')[0];
+      this.queueWrite('price_history_1s', {
+        mint: mint,
+        timestamp: new Date().toISOString(),
+        date_only: dateOnly,
+        price: currentPrice,
+        price_change_1s: previousPrice > 0 ? ((currentPrice - previousPrice) / previousPrice) * 100 : 0,
+        gain_from_entry: position.current_gain_percent,
+        high_since_entry: position.high_gain_percent
+      });
+      
+      // Check for exit conditions
+      await this.checkExitConditions(mint, position);
+      
+    } catch (error) {
+      console.error(`Error updating price for ${mint}:`, error);
+    }
+  }
+
+  private async getCurrentPrice(mint: string): Promise<number | null> {
+    // TODO: Integrate with your price feed (Jupiter, Raydium, etc.)
+    // For now, return null to indicate we need to implement this
+    // This is where you'd call your existing price fetching logic
+    return null;
+  }
+
+  // ============================================
+  // EXIT CONDITION CHECKING
+  // ============================================
+
+  private async checkExitConditions(mint: string, position: TrackedPosition): Promise<void> {
+    if (position.tracking_status !== 'active') return;
+    
+    const config = this.config.exit_simulation;
+    const gain = position.current_gain_percent;
+    const holdTime = position.hold_duration_seconds;
+    
+    // Check stop loss
+    if (gain <= config.stop_loss_percent) {
+      await this.executeExit(mint, position, 100, 'stop_loss', `Stop loss hit: ${gain.toFixed(1)}%`);
+      return;
+    }
+    
+    // Check trailing stop (if in profit)
+    if (position.high_gain_percent > 0) {
+      const dropFromHigh = position.high_gain_percent - gain;
+      if (dropFromHigh >= config.trailing_stop_percent) {
+        await this.executeExit(mint, position, 100, 'trailing_stop', 
+          `Trailing stop: Dropped ${dropFromHigh.toFixed(1)}% from high`);
+        return;
+      }
+    }
+    
+    // Check max hold time
+    if (holdTime >= config.max_hold_time) {
+      await this.executeExit(mint, position, 100, 'time_limit', 
+        `Max hold time reached: ${holdTime}s`);
+      return;
+    }
+    
+    // Check quick profit
+    if (config.quick_profit.enabled && holdTime < config.quick_profit.time_limit) {
+      if (gain >= config.quick_profit.min_gain) {
+        await this.executeExit(mint, position, 100, 'quick_profit', 
+          `Quick profit: ${gain.toFixed(1)}% in ${holdTime}s`);
+        return;
+      }
+    }
+    
+    // Check tiered exits
+    await this.checkTieredExits(mint, position, gain);
+  }
+
+  private async checkTieredExits(mint: string, position: TrackedPosition, gain: number): Promise<void> {
+    const config = this.config.exit_simulation;
+    
+    // Tier 1: 2x (100% gain) - sell 25%
+    if (gain >= config.tier_1.trigger_gain && position.remaining_position > 0.75 && 
+        (!position.last_tier_exited || position.last_tier_exited < 1)) {
+      await this.executeExit(mint, position, 25, 'tier_1', 
+        `Tier 1: Taking 25% at ${gain.toFixed(0)}% gain (2x)`);
+      position.remaining_position = 0.75;
+      position.last_tier_exited = 1;
+      return;
+    }
+    
+    // Tier 2: 4x (300% gain) - sell 25%
+    if (gain >= config.tier_2.trigger_gain && position.remaining_position > 0.50 && 
+        (!position.last_tier_exited || position.last_tier_exited < 2)) {
+      await this.executeExit(mint, position, 25, 'tier_2', 
+        `Tier 2: Taking 25% at ${gain.toFixed(0)}% gain (4x)`);
+      position.remaining_position = 0.50;
+      position.last_tier_exited = 2;
+      return;
+    }
+    
+    // Tier 3: 6x (500% gain) - sell 25%
+    if (gain >= config.tier_3.trigger_gain && position.remaining_position > 0.25 && 
+        (!position.last_tier_exited || position.last_tier_exited < 3)) {
+      await this.executeExit(mint, position, 25, 'tier_3', 
+        `Tier 3: Taking 25% at ${gain.toFixed(0)}% gain (6x)`);
+      position.remaining_position = 0.25;
+      position.last_tier_exited = 3;
+      return;
+    }
+  }
+
+  // ============================================
+  // EXIT EXECUTION
+  // ============================================
+
+  private async executeExit(
+    mint: string, 
+    position: TrackedPosition, 
+    exitPercent: number,
+    signalType: string, 
+    reason: string
+  ): Promise<void> {
+    console.log(`🚪 EXIT SIGNAL: ${reason}`);
+    
+    const dateOnly = new Date().toISOString().split('T')[0];
+    
+    // Record exit analysis
+    this.queueWrite('exit_analysis', {
+      mint: mint,
+      analysis_timestamp: new Date().toISOString(),
+      date_only: dateOnly,
+      signal_type: signalType,
+      signal_reason: reason,
+      confidence_level: 'high',
+      current_price: position.current_price,
+      entry_price: position.simulated_buy_price,
+      current_gain_percent: position.current_gain_percent,
+      hold_time_seconds: position.hold_duration_seconds,
+      should_exit: true,
+      exit_percent: exitPercent / 100,
+      remaining_position: position.remaining_position,
+      tier_number: position.last_tier_exited || null,
+      is_moonbag: position.remaining_position === 0.25
+    });
+    
+    // If full exit (100% or final position)
+    if (exitPercent === 100 || position.remaining_position <= 0.25) {
+      position.tracking_status = 'exited';
+      position.exit_signal_type = signalType;
+      position.exit_price = position.current_price;
+      position.exit_time = Date.now();
+      position.theoretical_pnl_percent = position.current_gain_percent;
+      
+      // Calculate P&L in SOL
+      if (position.simulated_buy_price > 0) {
+        const tokensOwned = position.simulated_token_amount * position.remaining_position;
+        const exitValue = tokensOwned * position.current_price;
+        const entryValue = position.simulated_position_size * position.remaining_position;
+        position.theoretical_pnl_sol = exitValue - entryValue;
+      }
+      
+      // Update database
+      await this.db?.run(
+        `UPDATE tokens_tracked SET
+          tracking_status = ?,
+          tracking_ended = ?,
+          exit_signal_type = ?,
+          exit_price = ?,
+          exit_time = ?,
+          theoretical_pnl_percent = ?,
+          theoretical_pnl_sol = ?,
+          hold_duration_seconds = ?
+        WHERE mint = ?`,
+        [
+          'exited',
+          new Date().toISOString(),
+          signalType,
+          position.exit_price,
+          new Date(position.exit_time).toISOString(),
+          position.theoretical_pnl_percent,
+          position.theoretical_pnl_sol,
+          position.hold_duration_seconds,
+          mint
+        ]
+      );
+      
+      // Start post-exit monitoring
+      if (this.config.recording.record_post_exit) {
+        await this.startPostExitMonitoring(mint, position);
+      } else {
+        // Stop price monitoring immediately
+        this.stopPriceMonitoring(mint);
+      }
+      
+      this.stats.positions_exited++;
+      this.emit('position_exited', { mint, reason, gain: position.current_gain_percent });
+    }
+  }
+
+  // ============================================
+  // POST-EXIT MONITORING
+  // ============================================
+
+  private async startPostExitMonitoring(mint: string, position: TrackedPosition): Promise<void> {
+    console.log(`📊 Continuing post-exit monitoring for ${this.config.recording.post_exit_duration}s...`);
+    
+    position.post_exit_monitoring = true;
+    const exitPrice = position.current_price;
+    
+    // Continue monitoring for configured duration
+    setTimeout(() => {
+      this.stopPriceMonitoring(mint);
+      
+      // Calculate missed opportunity
+      if (position.post_exit_high_price && exitPrice > 0) {
+        position.missed_opportunity_percent = 
+          ((position.post_exit_high_price - exitPrice) / exitPrice) * 100;
+        
+        // Mark as rally if >10% gain after exit
+        position.post_exit_rally = position.missed_opportunity_percent >= 10;
+        
+        // Update database
+        this.db?.run(
+          `UPDATE tokens_tracked SET
+            post_exit_high_price = ?,
+            post_exit_high_time = ?,
+            missed_opportunity_percent = ?,
+            post_exit_rally = ?
+          WHERE mint = ?`,
+          [
+            position.post_exit_high_price,
+            position.post_exit_high_time ? new Date(position.post_exit_high_time).toISOString() : null,
+            position.missed_opportunity_percent,
+            position.post_exit_rally ? 1 : 0,
+            mint
+          ]
+        );
+        
+        if (position.post_exit_rally) {
+          console.log(`🚀 POST-EXIT RALLY DETECTED: +${position.missed_opportunity_percent.toFixed(1)}% after exit!`);
+        }
+      }
+      
+      this.trackedPositions.delete(mint);
+    }, this.config.recording.post_exit_duration * 1000);
+    
+    // Track post-exit highs
+    const postExitCheck = setInterval(() => {
+      if (position.current_price > (position.post_exit_high_price || 0)) {
+        position.post_exit_high_price = position.current_price;
+        position.post_exit_high_time = Date.now();
+      }
+    }, 1000);
+    
+    // Clear interval after duration
+    setTimeout(() => clearInterval(postExitCheck), this.config.recording.post_exit_duration * 1000);
+  }
+
+  private stopPriceMonitoring(mint: string): void {
+    const interval = this.priceUpdateIntervals.get(mint);
+    if (interval) {
+      clearInterval(interval);
+      this.priceUpdateIntervals.delete(mint);
+    }
+  }
+
+  // ============================================
+  // BATCH WRITING SYSTEM
+  // ============================================
+
+  private queueWrite(table: string, data: any): void {
+    this.writeQueue.push({ table, data });
+    
+    // If queue is getting large, flush immediately
+    if (this.writeQueue.length >= this.config.recording.batch_insert_size) {
+      this.flushWriteQueue();
+    }
+  }
+
+  private startBatchFlush(): void {
+    this.flushInterval = setInterval(() => {
+      this.flushWriteQueue();
+    }, this.config.recording.flush_interval * 1000);
+  }
+
+  private async flushWriteQueue(): Promise<void> {
+    if (this.writeQueue.length === 0 || !this.db) return;
+    
+    const writes = [...this.writeQueue];
+    this.writeQueue = [];
+    
+    try {
+      await this.db.run('BEGIN TRANSACTION');
+      
+      for (const write of writes) {
+        await this.insertRecord(write.table, write.data);
+      }
+      
+      await this.db.run('COMMIT');
+      this.stats.database_writes += writes.length;
+      
+    } catch (error) {
+      console.error('Error flushing write queue:', error);
+      await this.db.run('ROLLBACK');
+    }
+  }
+
+  private async insertRecord(table: string, data: any): Promise<void> {
+    if (!this.db) return;
+    
+    const columns = Object.keys(data).join(', ');
+    const placeholders = Object.keys(data).map(() => '?').join(', ');
+    const values = Object.values(data);
+    
+    const sql = `INSERT INTO ${table} (${columns}) VALUES (${placeholders})`;
+    await this.db.run(sql, values);
+  }
+
+  // ============================================
+  // PUBLIC METHODS & STATS
+  // ============================================
+
+  public getStats() {
+    return {
+      ...this.stats,
+      active_positions: this.trackedPositions.size,
+      write_queue_size: this.writeQueue.length
+    };
+  }
+
+  public getActivePositions(): TrackedPosition[] {
+    return Array.from(this.trackedPositions.values());
+  }
+
+  public isRecording(): boolean {
+    return this.isRunning;
+  }
+}
+

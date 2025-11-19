@@ -1,0 +1,146 @@
+
+> sol-bot-sniper@5.0.0 predev
+> echo 'Config check disabled for live trading'
+
+'Config check disabled for live trading'
+
+> sol-bot-sniper@5.0.0 dev
+> ts-node src/index.ts
+
+🔒 ConfigurationEnforcer initialized
+❌ [CONFIG-ENFORCER] Configuration validation failed:
+   - Position size too large: 15 > 10% of 60
+📋 [CONFIG-ENFORCER] pool.positionSizeSOL = 0.06865 (by: getPositionSizeSOL)
+📋 [CONFIG-ENFORCER] pool.positionSizeSOL = 0.06865 (by: getPositionSizeSOL)
+📋 [CONFIG-ENFORCER] pool.positionSizeUSD = 15 (by: getPositionSizeUSD)
+📋 [CONFIG-ENFORCER] pool.initialPool = 60 (by: getInitialPool)
+📋 [CONFIG-ENFORCER] pool.targetPoolUSD = 100000 (by: getTargetPool)
+📋 [CONFIG-ENFORCER] pool.currentPool = 60 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] limits.maxTradesAbsolute = 100 (by: getMaxTrades)
+📋 [CONFIG-ENFORCER] limits.maxTradesPerSession = 50 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] limits.duration = 0 (by: CONFIG-BRIDGE)
+❌ [CONFIG-ENFORCER] Setting not found: limits.maxRuntime
+📋 [CONFIG-ENFORCER] exit.stopLoss = -80 (by: getStopLoss)
+📋 [CONFIG-ENFORCER] exit.takeProfit = 100 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.honeypotCheck = true (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.rugCheck = true (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.qualityFilterEnabled = true (by: isQualityFilterEnabled)
+📋 [CONFIG-ENFORCER] currentMode = LIVE (by: getCurrentMode)
+📋 [CONFIG-ENFORCER] runtime.mode.simulation = false (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] runtime.mode.useRealMoney = true (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] api.buyProvider = jupiter (by: getBuyProvider)
+📋 [CONFIG-ENFORCER] api.sellProvider = jupiter (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] limits.rateLimitDelay = 5000 (by: getRateLimitDelay)
+❌ [CONFIG-ENFORCER] Setting not found: limits.maxConcurrentTrades
+❌ [CONFIG-ENFORCER] Setting not found: entry.maxSlippage
+📋 [CONFIG-ENFORCER] pool.maxPositions = 20 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minLiquidity = 10000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.maxLiquidity = 10000000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minMarketCap = 0 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.maxMarketCap = 5000000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minHolders = 100 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.maxHolders = 10000 (by: CONFIG-BRIDGE)
+❌ [CONFIG-ENFORCER] Setting not found: exit.maxHoldTime
+📋 [CONFIG-ENFORCER] exit.trailingStop = false (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] limits.pauseBetweenScans = 100 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] pool.maxPositions = 20 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] pool.maxPositions = 20 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minLiquidity = 10000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.maxLiquidity = 10000000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minMarketCap = 0 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.maxMarketCap = 5000000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minHolders = 100 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.maxHolders = 10000 (by: CONFIG-BRIDGE)
+📋 [CONFIG-ENFORCER] entry.minVolume24h = 50000 (by: CONFIG-BRIDGE)
+🌉 [CONFIG-BRIDGE] Backward compatibility layer loaded
+   BUY_AMOUNT: 0.06865 SOL (15 USD)
+   MAX_TRADES: 100 (absolute limit)
+   TARGET_POOL: $100000
+📋 [CONFIG-ENFORCER] currentMode = LIVE (by: getCurrentMode)
+   MODE: LIVE
+   All values controlled by UNIFIED-CONTROL-ENHANCED.ts
+
+📊 VALIDATING SESSION PROGRESSION MATH...
+
+Session 1:
+  Gross Profit: $6,400
+  Tax Reserve (40%): $2,560
+  Net After Tax: $3,840
+  Max Reinvestment: $1920
+  Configured Next Pool: $1,920
+  ✅ Math is valid
+
+Session 2:
+  Gross Profit: $18,080
+  Tax Reserve (40%): $7,232
+  Net After Tax: $10,848
+  Max Reinvestment: $5424
+  Configured Next Pool: $5,424
+  ✅ Math is valid
+
+Session 3:
+  Gross Profit: $44,576
+  Tax Reserve (40%): $17,830.4
+  Net After Tax: $26,745.6
+  Max Reinvestment: $13373
+  Configured Next Pool: $13,372.8
+  ✅ Math is valid
+
+Session 4:
+  Gross Profit: $86,627.2
+  Tax Reserve (40%): $34,650.88
+  Net After Tax: $51,976.32
+  Max Reinvestment: $15593
+  Configured Next Pool: $15,592.896
+  ✅ Math is valid
+
+✅ SESSION PROGRESSION VALIDATION PASSED!
+
+============================================================
+🤖 BOT CONTROLLER INITIALIZED - USD-BASED POSITION SIZING
+============================================================
+📈 Session 1: Foundation Building - Learn market patterns
+💰 Pool: $600 → $7,000
+🎯 Growth Target: 11.7x
+🎲 Confidence: 47%
+⏸️ Pause After: 25 trades
+🎯 Max Trades: 30 per session
+💧 Min Liquidity: $3,000
+💰 Position Size: $20 = 0.1200 SOL
+📉 SOL Price: $170.00 (auto-updating)
+============================================================
+
+📊 Using BotController: {
+  session: 1,
+  params: {
+    confidenceLevel: 47,
+    pauseAfterTrades: 25,
+    maxTradesPerSession: 30,
+    minLiquidityUSD: 3000,
+    positionSizeUSD: 20,
+    positionSizeSOL: 0.12,
+    maxConcurrentPositions: 20,
+    slippageTolerance: 5,
+    priorityFeeSOL: 1,
+    currentSOLPrice: 170
+  }
+}
+C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/utils/managers/websocketManager.ts(60,21): error TS2351: This expression is not constructable.
+  Type 'typeof WebSocket' has no construct signatures.
+
+    at createTSError (C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:859:12)
+    at reportTSError (C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:863:19)
+    at getOutput (C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:1077:36)
+    at Object.compile (C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:1433:41)
+    at Module.m._compile (C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1839:10
+    at Object.require.extensions.<computed> [as .ts] (C:\Users\Administrator\Desktop\IAM\sol-bot-main\node_modules\ts-node\src\index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
+  diagnosticCodes: [ 2351 ]
+}

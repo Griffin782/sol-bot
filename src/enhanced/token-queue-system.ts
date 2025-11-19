@@ -1,6 +1,8 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import * as fs from 'fs';
 import { WhaleWatcher } from './automated-reporter';
+import { POSITION_SIZE_USD } from '../core/CONFIG-BRIDGE';
+
 
 interface PendingToken {
   signature: string;
@@ -60,19 +62,37 @@ class PoolManager {
   private poolTransactions: PoolTransaction[] = [];
   private target: number = 7000; // $7K target
   
-  constructor(initialPool: number, positionSizeUSD: number,) {
-    console.log(`🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
+  constructor(
+    initialPool: number,
+    positionSizeUSD: number,
+    solPriceUSD: number
+  ) {
+    console.log(
+      `🔍 DEBUG: PoolManager created with initialPool: $${initialPool}, positionSizeUSD: $${positionSizeUSD}, solPriceUSD: $${solPriceUSD}`
+    );
+
     this.initialPool = initialPool;
     this.currentPool = initialPool;
+
+    // USD amount to risk per trade
     this.positionSize = positionSizeUSD;
-    this.positionSizeSOL = positionSizeUSD / 170; // Using ~$170 per SOL
+
+    // Convert USD → SOL using live SOL price
+    this.positionSizeSOL = positionSizeUSD / solPriceUSD;
+
     this.maxPool = initialPool;
     this.minPool = initialPool;
     this.totalPnL = 0;
-    
-    this.logPoolTransaction('pool_status', 0, `Pool initialized with $${initialPool} and $${positionSizeUSD} positions`);
+
+    this.logPoolTransaction(
+      'pool_status',
+      0,
+      `Pool initialized with $${initialPool} and $${positionSizeUSD} positions (SOL price: $${solPriceUSD})`
+    );
+
     this.printPoolStatus();
   }
+
 
   canExecuteTrade(): boolean {
     return this.currentPool >= this.positionSize;
@@ -333,11 +353,23 @@ class TokenQueueManager {
     this.whaleWatcher = new WhaleWatcher(rpcUrl);
     this.config = config || {};
     
-    // Use position size from config if provided, otherwise default to $15
-    const positionSizeUSD = config?.positionSizeUSD || (config?.positionSize ? config.positionSize * 170 : 15);
-    console.log(`🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSize: $${positionSizeUSD}`);
-    
-    this.poolManager = new PoolManager(initialPool, positionSizeUSD);
+    // NEW — Use session-correct USD size and live SOL price
+    const positionSizeUSD = POSITION_SIZE_USD;  // from UNIFIED-CONTROL
+    const solPriceUSD =
+    this.config?.currentSOLPrice ?? 170;      // live SOL price (fallback 170)
+
+    // Debug log
+    console.log(
+      `🔍 DEBUG: Creating PoolManager with initialPool: $${initialPool}, positionSizeUSD: $${positionSizeUSD}, solPriceUSD: $${solPriceUSD}`
+    );
+
+    // Create pool manager with USD + SOL price
+    this.poolManager = new PoolManager(
+      initialPool,
+      positionSizeUSD,
+      solPriceUSD
+    );
+
     
     this.ensureDataDirectory();
     this.initializePoolCSV();
@@ -499,73 +531,86 @@ private async attemptStage1Scoring(token: PendingToken): Promise<void> {
   }
 
   private async executeImmediateBuy(token: PendingToken): Promise<void> {
-    const poolSummary = this.poolManager.getPoolSummary();
-    console.log(`🚀 EXECUTING IMMEDIATE BUY: ${token.tokenMint.slice(0, 8)}...`);
-    console.log(`   💰 Using position size: $${this.config?.positionSizeUSD || 15}`);
-    
-    try {
-      // Pool integration: Deduct from pool first
-      const success = this.poolManager.executeTradeDeduction(token.tokenMint);
-      
-      if (!success) {
-        token.status = 'pool_depleted';
-        token.errors.push('Pool depleted during buy execution');
-        console.log(`   ❌ BUY FAILED: Pool depleted`);
-        return;
-      }
+  const poolSummary = this.poolManager.getPoolSummary();
 
-      const entryPrice = this.simulateEntryPrice();
-      
-      // Set entry data for 5x+ tracking
-      token.status = 'bought';
-      token.entryPrice = entryPrice;
-      token.currentPrice = entryPrice;
-      token.tokenSymbol = 'TOKEN'; // Get actual symbol if available
-      token.entryTime = Date.now();
-      token.maxHoldTime = this.config.maxHoldTime || 30; // Default 30 minutes
-      
-      // Add to active positions for monitoring
-      this.activePositions.set(token.tokenMint, token);
-      
-      console.log(`   ✅ BOUGHT: $${this.config?.positionSizeUSD || 15} position @ $${entryPrice.toFixed(6)}`);
-      console.log(`   🐋 Starting enhanced whale monitoring with tiered exits...`);
-      
-      // Start whale monitoring with pool result callback and config
-      await this.whaleWatcher.startWhaleMonitoring(
-        token.tokenMint, 
-        entryPrice, 
-        poolSummary.currentPool / 100,
-        (profitPercentage: number, holdTimeMinutes: number) => {
-          // When trade exits, update pool
-          this.poolManager.processTradeResult(token.tokenMint, profitPercentage, holdTimeMinutes);
-          
-          // Update token exit data for performance tracking
-          token.exitPrice = entryPrice * (1 + profitPercentage / 100);
-          token.status = profitPercentage > 0 ? 'profit' : 'loss' as any;
-          
-          // Remove from active positions
-          this.activePositions.delete(token.tokenMint);
-          
-          // Log event for analysis
-          this.logEvent('trade_exit', {
-            tokenMint: token.tokenMint,
-            entryPrice,
-            exitPrice: token.exitPrice,
-            profitPercentage,
-            holdTimeMinutes
-          });
-        },
-        this.config  // Pass the config with tiered exit settings
-      );
-      
-      this.logTradingAction(token, 'immediate_buy', this.config?.positionSizeUSD || 15, entryPrice);
-      
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      token.errors.push(`Buy failed: ${errorMsg}`);
-      console.log(`   ❌ BUY FAILED: ${errorMsg}`);
+  // Use position size from config if provided, otherwise fall back to UNIFIED-CONTROL (via CONFIG-BRIDGE)
+  const effectivePositionSizeUSD =
+    this.config?.positionSizeUSD ??
+    (this.config?.positionSize ? this.config.positionSize * 170 : POSITION_SIZE_USD);
+
+  console.log(`🚀 EXECUTING IMMEDIATE BUY: ${token.tokenMint.slice(0, 8)}...`);
+  console.log(`   💰 Using position size: $${effectivePositionSizeUSD}`);
+
+  try {
+    // Pool integration: Deduct from pool first
+    const success = this.poolManager.executeTradeDeduction(token.tokenMint);
+
+    if (!success) {
+      token.status = 'pool_depleted';
+      token.errors.push('Pool depleted during buy execution');
+      console.log(`   ❌ BUY FAILED: Pool depleted`);
+      return;
     }
+
+    const entryPrice = this.simulateEntryPrice();
+
+    // Set entry data for 5x+ tracking
+    token.status = 'bought';
+    token.entryPrice = entryPrice;
+    token.currentPrice = entryPrice;
+    token.tokenSymbol = 'TOKEN'; // Get actual symbol if available
+    token.entryTime = Date.now();
+    token.maxHoldTime = this.config.maxHoldTime || 30; // Default 30 minutes
+
+    // Add to active positions for monitoring
+    this.activePositions.set(token.tokenMint, token);
+
+    console.log(
+      `   ✅ BOUGHT: $${effectivePositionSizeUSD} position @ $${entryPrice.toFixed(6)}`
+    );
+    console.log(`   🐋 Starting enhanced whale monitoring with tiered exits...`);
+
+    // Start whale monitoring with pool result callback and config
+    await this.whaleWatcher.startWhaleMonitoring(
+      token.tokenMint,
+      entryPrice,
+      poolSummary.currentPool / 100,
+      (profitPercentage: number, holdTimeMinutes: number) => {
+        // When trade exits, update pool
+        this.poolManager.processTradeResult(
+          token.tokenMint,
+          profitPercentage,
+          holdTimeMinutes
+        );
+
+        // Update token exit data for performance tracking
+        token.exitPrice = entryPrice * (1 + profitPercentage / 100);
+        token.status = (profitPercentage > 0 ? 'profit' : 'loss') as any;
+
+        // Remove from active positions
+        this.activePositions.delete(token.tokenMint);
+
+        // Log event for analysis
+        this.logEvent('trade_exit', {
+          tokenMint: token.tokenMint,
+          entryPrice,
+          exitPrice: token.exitPrice,
+          profitPercentage,
+          holdTimeMinutes
+        });
+      },
+      this.config // Pass the config with tiered exit settings
+    );
+
+    // Use the same effective position size in the trading log
+    this.logTradingAction(token, 'immediate_buy', effectivePositionSizeUSD, entryPrice);
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    token.errors.push(`Buy failed: ${errorMsg}`);
+    console.log(`   ❌ BUY FAILED: ${errorMsg}`);
   }
+}
+
 
   // Get all currently active positions for 5x+ monitoring
   getActivePositions(): ActivePosition[] {

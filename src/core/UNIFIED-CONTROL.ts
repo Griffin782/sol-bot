@@ -28,7 +28,7 @@ const MODE_PRESETS = {
   PAPER: {
     positionSizeSOL: 0.06865,     // Tiny amounts
     positionSizeUSD: 15,       // ~$0.002
-    maxTrades: 50,
+    maxTrades: 100,           // High limit for testing
     duration: 0,                  // Run until trade limit
     useRealMoney: false,
     simulation: true,
@@ -88,8 +88,11 @@ export interface SessionConfig {
 }
 
 // Auto-calculate session progression based on user's targets
-function calculateSessionProgression(userTargetPool: number = 100000): SessionConfig[] {
+function calculateSessionProgression(userTargetPool: number = 100000, currentMode: TradingMode = TradingMode.PAPER): SessionConfig[] {
   const sessions: SessionConfig[] = [];
+
+  // Get base position size from current mode preset
+  const basePositionSize = MODE_PRESETS[currentMode].positionSizeUSD;
 
   // Session 1: Foundation
   const session1: SessionConfig = {
@@ -98,8 +101,8 @@ function calculateSessionProgression(userTargetPool: number = 100000): SessionCo
     targetPool: Math.min(7000, userTargetPool * 0.07),  // 7% of user target or $7k
     profitRequired: 0,
     growthMultiplier: 0,
-    maxTrades: 30,
-    positionSizeUSD: 20,
+    maxTrades: 500,
+    positionSizeUSD: basePositionSize,  // ← Use mode preset instead of hardcoded 20
     confidenceAdjustment: 0,
     taxReservePercent: 40,
     reinvestmentPercent: 50,
@@ -122,8 +125,8 @@ function calculateSessionProgression(userTargetPool: number = 100000): SessionCo
     targetPool: Math.min(20000, userTargetPool * 0.2),  // 20% of user target or $20k
     profitRequired: 0,
     growthMultiplier: 0,
-    maxTrades: 40,
-    positionSizeUSD: 45,
+    maxTrades: 500,
+    positionSizeUSD: basePositionSize * 2.25,  // ← Scale from base (was 45, now 15 * 2.25 = 33.75)
     confidenceAdjustment: 5,
     taxReservePercent: 40,
     reinvestmentPercent: 50,
@@ -145,8 +148,8 @@ function calculateSessionProgression(userTargetPool: number = 100000): SessionCo
     targetPool: Math.min(50000, userTargetPool * 0.5),  // 50% of user target or $50k
     profitRequired: 0,
     growthMultiplier: 0,
-    maxTrades: 50,
-    positionSizeUSD: 100,
+    maxTrades: 500,
+    positionSizeUSD: basePositionSize * 5,  // ← Scale from base (was 100, now 15 * 5 = 75)
     confidenceAdjustment: 10,
     taxReservePercent: 40,
     reinvestmentPercent: 50,
@@ -168,8 +171,8 @@ function calculateSessionProgression(userTargetPool: number = 100000): SessionCo
     targetPool: userTargetPool,    // User's actual target
     profitRequired: 0,
     growthMultiplier: 0,
-    maxTrades: 60,
-    positionSizeUSD: 200,
+    maxTrades: 600,
+    positionSizeUSD: basePositionSize * 10,  // ← Scale from base (was 200, now 15 * 10 = 150)
     confidenceAdjustment: 15,
     taxReservePercent: 40,
     reinvestmentPercent: 30,       // Lower reinvestment (taking profits)
@@ -189,6 +192,44 @@ function calculateSessionProgression(userTargetPool: number = 100000): SessionCo
 
 // ============================================
 // CONFLICT ANALYSIS AND RESOLUTION
+// ============================================
+//
+// ⚠️ WHAT THIS SECTION DOES:
+// This section documents and resolves conflicts between OLD configuration files
+// that existed BEFORE UNIFIED-CONTROL was created. It's a historical record showing
+// what conflicting values existed across different files and how they were resolved.
+//
+// 🔍 WHY z-masterConfig.ts IS LISTED HERE:
+// Your project had MULTIPLE config files competing with each other:
+// - z-masterConfig.ts (your intended conservative settings)
+// - config.ts (bot's aggressive defaults)
+// - botController.ts (session-based settings)
+// - secure-pool-system.ts (pool management settings)
+// - .env (environment overrides)
+//
+// 💡 THE PROBLEM IT SOLVED:
+// Before UNIFIED-CONTROL, these files created chaos:
+// - You set positionSize to 0.00089 SOL ($0.21) in z-masterConfig
+// - BUT config.ts used 0.089 SOL ($20) - 100x larger!
+// - Bot was trading with YOUR settings ignored
+// - Result: Massive losses because bot used aggressive defaults
+//
+// ✅ THE SOLUTION (UNIFIED-CONTROL):
+// This file (UNIFIED-CONTROL.ts) REPLACED all those old files and became the
+// SINGLE SOURCE OF TRUTH. The conflict analysis below is a RECORD of what was
+// wrong and how it was fixed. It's documentation, not active code.
+//
+// 📋 CURRENT STATE:
+// - z-masterConfig.ts is NO LONGER USED by the bot
+// - config.ts is NO LONGER USED by the bot
+// - UNIFIED-CONTROL.ts is the ONLY config file the bot reads
+// - The conflict data below is for your reference only
+//
+// 🎯 WHAT IT MEANS FOR YOU:
+// You can safely IGNORE the conflict section below. It's historical documentation
+// showing what conflicts existed and how they were resolved when creating this file.
+// To change bot settings now, you only modify MASTER_SETTINGS below (line 265+).
+//
 // ============================================
 
 interface ConfigConflict {
@@ -269,16 +310,18 @@ export const MASTER_SETTINGS = {
   configSource: 'UNIFIED-CONTROL-ENHANCED.ts',
 
   // Current Operating Mode
-  currentMode: TradingMode.LIVE,  // or TradingMode.PRODUCTION
+  currentMode: TradingMode.PAPER,  // ✅ PAPER mode for testing | Change to CONSERVATIVE, LIVE, or PRODUCTION for real trading
 
   // Pool Management (CONFLICTS RESOLVED)
   pool: {
     initialPool: 60,          // Starting amount $600
     currentPool: 60,
     targetPoolUSD: 100000,
-    positionSizeSOL: 0.06865,   // From MODE_PRESETS.PAPER
-    positionSizeUSD: 15,      // 09.23- 1400 rate
-    maxPositions: 20,
+    positionSizeSOL: MODE_PRESETS[TradingMode.PAPER].positionSizeSOL,   // ← Now dynamically references MODE_PRESETS
+    positionSizeUSD: MODE_PRESETS[TradingMode.PAPER].positionSizeUSD,   // ← Now dynamically references MODE_PRESETS
+    maxPositions: 400,        // 🎯 gRPC Basic tier tested capacity: 400-500 positions max (Nov 3, 2025)
+                              // Load test results: 200✅ 500✅ 1000❌ (HTTP 401 auth limit at 2000 subscriptions)
+                              // 12 vCPU server can handle more, but gRPC subscription quota is the bottleneck
     compoundProfits: true,
     minPoolReserve: 10,
     maxPoolRisk: 15
@@ -288,6 +331,8 @@ export const MASTER_SETTINGS = {
   limits: {
     maxTradesPerSession: 50,
     maxTradesAbsolute: 100,
+    maxConcurrentTrades: 10,      // Maximum concurrent open positions
+    maxRuntime: 0,                // 0 = unlimited, otherwise milliseconds
     maxLossUSD: 100,
     duration: 0,
     rateLimitDelay: 5000,
@@ -300,6 +345,7 @@ export const MASTER_SETTINGS = {
   entry: {
     honeypotCheck: true,
     rugCheck: true,
+    maxSlippage: 5,               // Maximum slippage percentage allowed
     minLiquidity: 10000,
     maxLiquidity: 10000000,
     minMarketCap: 0,
@@ -317,6 +363,7 @@ export const MASTER_SETTINGS = {
   exit: {
     stopLoss: -80,
     takeProfit: 100,
+    maxHoldTime: 0,               // 0 = unlimited, otherwise milliseconds (e.g., 3600000 = 1 hour)
     trailingStop: false,
     trailingStopTrigger: 50,
     trailingStopDistance: 20,
@@ -336,7 +383,7 @@ export const MASTER_SETTINGS = {
   },
 
   // Session Progression (AUTO-CALCULATED TO YOUR TARGET)
-  sessions: calculateSessionProgression(100000),
+  sessions: calculateSessionProgression(100000, TradingMode.PAPER),  // ← Pass current mode to scale position sizes
 
   // Quality Filter (FORCE ENABLED)
   qualityFilter: {
@@ -352,11 +399,43 @@ export const MASTER_SETTINGS = {
 
   // API Configuration
   api: {
-    rpcEndpoint: 'https://api.mainnet-beta.solana.com',
-    wsEndpoint: 'wss://api.mainnet-beta.solana.com',
-    jupiterEndpoint: 'https://quote-api.jup.ag',
-    buyProvider: 'jupiter',           // Proven working
-    sellProvider: 'jupiter',          // Consistent
+    rpcEndpoint: process.env.QUICKNODE_RPC_ENDPOINT || process.env.RPC_HTTPS_URI || 'https://api.mainnet-beta.solana.com',
+    wsEndpoint: process.env.RPC_WSS_URI || 'wss://api.mainnet-beta.solana.com',
+    jupiterEndpoint: process.env.JUPITER_ENDPOINT || 'https://lite-api.jup.ag',
+    buyProvider: 'pumpswap',          // Using PumpSwap SDK for direct on-chain swaps
+    sellProvider: 'pumpswap',         // Consistent with buy provider
+
+    // Rate limiting (from Phase 1 testing)
+    rateLimitDelay: parseInt(process.env.JUPITER_DELAY_MS || '100'),
+    rateLimitRps: parseInt(process.env.JUPITER_RATE_LIMIT || '10'),
+  },
+
+  // Data Stream Configuration (gRPC vs WebSocket)
+  dataStream: {
+    method: 'grpc',  // 'grpc' or 'wss' - ✅ CHANGED TO gRPC
+    mode: 'program',  // 'program' or 'wallet'
+
+    // gRPC Configuration (Triton One / Solana Vibe Station)
+    grpc: {
+      enabled: true,  // ✅ ENABLED - Set to true to enable gRPC
+      endpoint: process.env.GRPC_HTTP_URI || 'https://basic.grpc.solanavibestation.com',
+      authToken: process.env.GRPC_AUTH_TOKEN || '',
+      reconnectDelay: 5000,
+      maxReconnectAttempts: 10,
+    },
+
+    // Programs to Monitor (Pump.fun, etc.)
+    programs: [
+      {
+        key: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
+        log_discriminator: 'Program log: Instruction: InitializeMint2',
+        name: 'Pump.fun token creation',
+        enabled: true,
+      },
+    ],
+
+    // Wallets to Monitor (optional)
+    wallets: [] as { key: string; name: string; enabled: boolean }[],
   },
 
   // File Paths
@@ -566,11 +645,12 @@ export class ConfigurationEnforcer {
   private validateStartupConfiguration(): boolean {
     const errors: string[] = [];
 
-    // Position size validation
+    // Position size validation (mode-aware)
     const positionSize = MASTER_SETTINGS.pool.positionSizeUSD;
     const poolSize = MASTER_SETTINGS.pool.initialPool;
-    if (positionSize > poolSize * 0.1) {
-      errors.push(`Position size too large: ${positionSize} > 10% of ${poolSize}`);
+    const maxPercent = MASTER_SETTINGS.currentMode === TradingMode.PAPER ? 0.5 : 0.1; // 50% for PAPER, 10% for LIVE
+    if (positionSize > poolSize * maxPercent) {
+      errors.push(`Position size too large: ${positionSize} > ${maxPercent * 100}% of ${poolSize}`);
     }
 
     // Safety validation

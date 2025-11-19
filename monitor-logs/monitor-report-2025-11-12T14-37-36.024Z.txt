@@ -1,0 +1,52 @@
+[44m[37m[1m SOL-BOT MONITOR V2 - Runtime: 04h 58m 54s [0m
+[36mLog Directory: C:\Users\Administrator\Desktop\IAM\sol-bot-main\monitor-logs | Last Update: 9:37:36 AM[0m
+
+[33m[1m=== ERROR SUMMARY ===[0m
+Total Errors: 574
+- GRPC_ERROR: 359
+- RATE_LIMIT: 132
+- RECONNECT: 83
+
+[33mError Patterns Detected:[0m
+- [33mSTRING_SIZE_ERROR: 34[0m
+- [33mMETADATA_ERROR: 21[0m
+
+[31mRecent Errors:[0m
+- RATE_LIMIT: ⏰ Rate limit delay: 6 seconds until next token......
+- RATE_LIMIT: ⏰ Rate limit delay: 6 seconds until next token......
+- RATE_LIMIT: ⏰ Rate limit delay: 6 seconds until next token......
+- RATE_LIMIT: ⏰ Rate limit delay: 6 seconds until next token......
+- RATE_LIMIT: 📈 Detection Rate: 429.1/hour...
+
+[32m[1m=== TOKEN STATS ===[0m
+Tokens Detected: 0 (0.0/hour)
+Tokens Bought: 0 (Unique: 0)
+Tokens Rejected: 0
+Tokens Blocked: 0
+Tokens Sold: 0 (Unique: 0)
+Duplicate Purchase Ratio: 0.00x per token
+
+[35m[1m=== METADATA SYSTEM STATUS ===[0m
+Status: [31mPROBLEMATIC[0m
+Queries: 0
+Successes: 0
+Failures: 0
+STRING_SIZE Errors: 0
+
+[36m[1m=== TOKEN QUALITY FILTER STATUS ===[0m
+Status: [31mINACTIVE/BYPASSED[0m
+Checks Run: 0
+Tokens Passed: 0
+Tokens Blocked: 0
+
+[31m[1m=== WARNINGS ===[0m
+⚠️ High rate limit errors: 132 - API usage too aggressive
+
+[35m[1m=== MILESTONES ===[0m
+6-minute mark: ✅ PASSED
+15-minute mark: ✅ PASSED
+20-minute mark: ✅ PASSED
+30-minute mark: ✅ PASSED
+
+[36m[1m=== MONITOR CONCLUSION ===[0m
+[31m⚠️ HIGH ERROR COUNT: 574 errors detected[0m

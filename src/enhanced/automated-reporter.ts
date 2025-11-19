@@ -1,4 +1,25 @@
-﻿// POOL-INTEGRATED WHALE MONITOR - Enhanced version with 5x+ detection and tiered exits
+﻿// ============================================
+// WHALE WATCHER (ACTIVELY USED - DO NOT DELETE!)
+// ============================================
+// ⚠️  WARNING: This file IS being used by the bot!
+//
+// Import chain:
+//   - token-queue-system.ts (line 3) imports WhaleWatcher class
+//   - TokenQueueManager (line 305) declares whaleWatcher property
+//   - TokenQueueManager constructor (line 333) instantiates WhaleWatcher
+//   - Called at line 534: this.whaleWatcher.startWhaleMonitoring()
+//   - Bot uses TokenQueueManager at index.ts line 755
+//
+// Purpose: Provides whale activity monitoring for TokenQueueManager
+// Status: ACTIVE (used alongside PARTIAL-EXIT-SYSTEM.ts)
+//
+// Relationship with PARTIAL-EXIT-SYSTEM:
+//   - TokenQueueManager uses WhaleWatcher for queue-based monitoring
+//   - PARTIAL-EXIT-SYSTEM handles direct position monitoring
+//   - Both systems can coexist (different monitoring approaches)
+// ============================================
+
+// POOL-INTEGRATED WHALE MONITOR - Enhanced version with 5x+ detection and tiered exits
 
 import { Connection } from '@solana/web3.js';
 import * as fs from 'fs';

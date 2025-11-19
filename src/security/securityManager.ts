@@ -1776,13 +1776,19 @@ export class SecurityManager {
     ];
     
     console.log('🔐 Ensuring trusted IPs are whitelisted:');
+    let newlyAdded = 0;
+    let alreadyWhitelisted = 0;
+
     trustedIPs.forEach(({ ip, desc }) => {
       if (!this.config.whitelist.allowedIPs.includes(ip)) {
         this.addIPToWhitelist(ip, desc);
+        newlyAdded++;
       } else {
-        console.log(`✅ ${ip} already whitelisted (${desc})`);
+        alreadyWhitelisted++;
       }
     });
+
+    console.log(`✅ ${alreadyWhitelisted} trusted IPs verified, ${newlyAdded} newly added`);
   }
 
   public removeIPFromWhitelist(ip: string): void {

@@ -1,0 +1,44 @@
+
+## 📋 Standard Prompt Template for Future
+
+### **Send This to CC for ANY Integration:**
+```
+INTEGRATION COMPLETION CHECKLIST
+
+
+When integrating [NEW_COMPONENT]:
+
+1. INFRASTRUCTURE CHECK:
+   - [ ] New component file created
+   - [ ] Dependencies installed
+   - [ ] Exports added to index files
+   - [ ] TypeScript compiles with zero errors
+
+2. INTEGRATION CHECK:
+   - [ ] Find ALL code paths that should use new component
+   - [ ] Replace OLD implementation with NEW in each path
+   - [ ] Remove or deprecate OLD implementation
+   - [ ] Verify NO code paths still use OLD method
+
+3. TESTING CHECK:
+   - [ ] Run 5-minute test
+   - [ ] Verify new component is actually called (add debug logs)
+   - [ ] Verify old component is NOT called (grep for old function names)
+   - [ ] Check for expected behavior (cache hits, faster response, etc)
+
+4. VERIFICATION CHECK:
+   - [ ] Show me the grep results for old function calls
+   - [ ] Show me the logs proving new component is used
+   - [ ] Show me the performance improvement (before/after)
+   - [ ] Confirm ZERO instances of old implementation remain
+
+5. DOCUMENTATION CHECK:
+   - [ ] Update README with integration status
+   - [ ] Document any code paths that still use old method (if any)
+   - [ ] Note any technical debt or future improvements needed
+
+DO NOT mark integration as "complete" unless ALL checkboxes are ✅
+DO NOT say "just needs integration" - DO THE INTEGRATION
+DO NOT assume - VERIFY with code evidence
+
+Report status for each checkbox with evidence.

@@ -1,0 +1,37 @@
+{
+  "startTime": "2025-11-03T22:27:04.867Z",
+  "serverSpecs": "12 vCPU, 24GB RAM",
+  "phases": [
+    {
+      "phase": "Phase 1",
+      "targetPositions": 200,
+      "actualPositions": 200,
+      "avgCpuPercent": 0,
+      "avgProcessingMs": 0,
+      "avgMemoryMB": 2739.9,
+      "errors": 0,
+      "success": true,
+      "timestamp": "2025-11-03T22:27:04.913Z"
+    },
+    {
+      "phase": "Phase 2",
+      "targetPositions": 500,
+      "actualPositions": 500,
+      "avgCpuPercent": 0,
+      "avgProcessingMs": 0,
+      "avgMemoryMB": 305.7,
+      "errors": 0,
+      "success": true,
+      "timestamp": "2025-11-03T22:30:11.489Z"
+    }
+  ],
+  "recommendation": "",
+  "lastMessage": "Added 1000 positions, monitoring...",
+  "currentStats": {
+    "positions": 0,
+    "updatesPerSec": 0,
+    "processingMs": 0,
+    "cpuPercent": 0,
+    "memoryMB": 305.7
+  }
+}

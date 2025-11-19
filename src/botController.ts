@@ -262,7 +262,7 @@ export class BotController {
       console.error('Using secure-pool-system.ts fallback due to invalid progression');
     }
 
-    this.logInitialization();
+    // logInitialization() will be called after first price fetch in startPriceUpdateLoop()
   }
 
   // ============================================
@@ -275,18 +275,23 @@ export class BotController {
         const newPrice = await fetchCurrentSOLPrice();
         this.tradingParams.currentSOLPrice = newPrice;
         this.tradingParams.positionSizeSOL = convertUSDToSOL(
-          this.tradingParams.positionSizeUSD, 
+          this.tradingParams.positionSizeUSD,
           newPrice
         );
-        
+
         console.log(`💰 SOL Price Updated: $${newPrice.toFixed(2)} | Position: ${this.tradingParams.positionSizeSOL.toFixed(4)} SOL ($${this.tradingParams.positionSizeUSD})`);
       } catch (error) {
         console.log('⚠️ Price update failed:', error);
       }
     };
-    
-    // Update price immediately and then every 5 minutes
+
+    // Update price immediately
     await updatePrice();
+
+    // Log initialization with live price
+    this.logInitialization();
+
+    // Then update every 5 minutes
     setInterval(updatePrice, 5 * 60 * 1000); // 5 minutes
   }
 

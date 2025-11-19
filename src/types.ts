@@ -107,6 +107,35 @@ export interface JupiterSwapQuoteResponse {
   contextSlot: number;
   timeTaken: number;
 }
+
+/**
+ * Swap execution result with token amounts
+ * Created: October 28, 2025
+ * Purpose: Return actual token amounts from swapToken() instead of just boolean
+ */
+export interface SwapResult {
+  success: boolean;           // Whether swap succeeded
+  outputAmount?: number;      // Tokens received (from quote outAmount)
+  inputAmount?: number;       // SOL spent (from quote inAmount)
+  txSignature?: string;       // Transaction signature if successful
+  priceImpactPct?: string;    // Price impact percentage
+  error?: string;             // Error message if failed
+}
+
+/**
+ * Sell swap result for exit tracking
+ * Created: November 17, 2025 (Phase 3A)
+ * Purpose: Track actual SOL received and tokens sold for real ROI calculation
+ */
+export interface SellSwapResult {
+  success: boolean;           // Whether sell succeeded
+  solReceived?: number;       // SOL received from sale (quote outAmount)
+  tokensSold?: number;        // Tokens sold (quote inAmount)
+  txSignature?: string;       // Transaction signature if successful
+  priceImpactPct?: string;    // Price impact percentage
+  error?: string;             // Error message if failed
+}
+
 export interface JupiterSwapResponse {
   swapTransaction: string;
   lastValidBlockHeight: number;

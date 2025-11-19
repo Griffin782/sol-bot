@@ -11,5 +11,15 @@
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
-  "exclude": ["src/backup-old/**/*"]
+  "exclude": [
+    "src/backup-old/**/*",
+    "fix-scripts/**/*",
+    "index-*backup*.ts",
+    "**/*backup*.ts",
+    "ARCHIVED-BACKUPS-*/**/*",
+    "backup-archives/**/*",
+    "node_modules/**/*",
+    "test/**/*",
+    "**/*.test.ts"
+  ]
 }

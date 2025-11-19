@@ -94,7 +94,7 @@ export class ConfigValidator {
     console.log("📋 CONFIGURATION STATUS");
     console.log("=".repeat(50));
     console.log(`✅ Active Config: core/UNIFIED-CONTROL.ts`);
-    console.log(`🔒 Config Version: ${MASTER_SETTINGS.z_configVersion}`);
+    console.log(`🔒 Config Version: ${(MASTER_SETTINGS as any).z_configVersion || MASTER_SETTINGS.version}`);
     console.log(`🤖 Bot Version: ${MASTER_SETTINGS.version}`);
     console.log(`🧪 Test Mode: ${MASTER_SETTINGS.runtime?.mode?.simulation || false}`);
     console.log(`💰 Initial Pool: $${MASTER_SETTINGS.pool.initialPool}`);

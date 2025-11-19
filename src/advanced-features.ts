@@ -45,7 +45,7 @@ class WalletPoolManager {
     if (fs.existsSync(poolFile)) {
       const data = fs.readFileSync(poolFile, 'utf-8');
       this.walletPool = JSON.parse(data);
-      console.log(`📊 Loaded ${this.walletPool.length} wallets from pool`);
+      console.log(`📊 Wallet rotation pool loaded: ${this.walletPool.length} wallets available for spreading transaction risk`);
     } else {
       console.log('⚠️ No wallet pool found. Creating new pool...');
       this.generateWalletPool(10); // Generate 10 wallets by default
