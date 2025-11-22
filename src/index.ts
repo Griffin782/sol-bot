@@ -251,6 +251,9 @@ const stats = {
   losses: 0          // Paper trading losses
 };
 
+// Session start time - tracks when current session began (not lifetime)
+let sessionStartTime: Date = new Date();
+
 // Import and initialize tax tracker
 import { AdvancedBotManager } from './advanced-features';
 
@@ -659,7 +662,10 @@ async function resetForLiveTrading(): Promise<void> {
     stats.tokensBlocked = 0;
     stats.poolDepleted = 0;
     stats.startTime = new Date();
-    
+
+    // Reset session start time for accurate runtime tracking
+    sessionStartTime = new Date();
+
     console.log("\n✅ RESET COMPLETE - READY FOR LIVE TRADING!");
     console.log("   Starting with Session 1");
     console.log("   Initial Pool: $600");
@@ -674,11 +680,14 @@ async function resetForLiveTrading(): Promise<void> {
 // For keeping lifetime stats but resetting current session
 async function resetCurrentSessionOnly(): Promise<void> {
   console.log("🔄 RESETTING CURRENT SESSION (keeping lifetime stats)...");
-  
+
   // Reset ONLY current session, keep lifetime profit
   botController.resetToSession(0);
   currentSession = getCurrentSessionInfo();
-  
+
+  // Reset session start time for accurate runtime tracking
+  sessionStartTime = new Date();
+
   // Keep totalLifetimeProfit and walletRotationHistory intact!
   console.log(`   📊 Keeping Lifetime NET Profit: $${totalLifetimeProfit.toLocaleString()}`);
   console.log(`   📊 Keeping ${walletRotationHistory.length} previous sessions in history`);
@@ -727,7 +736,7 @@ async function rotateWallet(poolManager: any): Promise<boolean> {
     const walletRecord = {
       sessionNumber: sessionInfo.sessionNumber,
       walletIndex: currentWalletIndex,
-      startTime: stats.startTime,
+      startTime: sessionStartTime,
       endTime: new Date(),
       initialPool: sessionInfo.initialPool,
       targetPool: sessionInfo.targetPool,
@@ -2106,15 +2115,16 @@ async function recordSimulatedExit(
 // STATUS REPORTING
 // ============================================
 function printStatus(): void {
-  const runtime = Math.floor((Date.now() - stats.startTime.getTime()) / 1000);
+  // Use sessionStartTime for accurate current session runtime
+  const runtime = Math.floor((Date.now() - sessionStartTime.getTime()) / 1000);
   const hours = Math.floor(runtime / 3600);
   const minutes = Math.floor((runtime % 3600) / 60);
   const seconds = runtime % 60;
   const tokensPerHour = stats.tokensDetected > 0 ? (stats.tokensDetected / (runtime / 3600)).toFixed(1) : "0";
-  
+
   console.clear();
   console.log(`\n${"=".repeat(50)}`);
-  console.log(`📊 BOT STATUS (Runtime: ${hours}h ${minutes}m ${seconds}s)`);
+  console.log(`📊 CURRENT SESSION STATUS (Runtime: ${hours}h ${minutes}m ${seconds}s)`);
   console.log(`${"=".repeat(50)}`);
   console.log(`🎯 Tokens Detected: ${stats.tokensDetected}`);
   console.log(`✅ Tokens Bought: ${stats.tokensBought}`);
@@ -2123,11 +2133,11 @@ function printStatus(): void {
   console.log(`⛔ Pool Depleted Skips: ${stats.poolDepleted}`);
   console.log(`📈 Detection Rate: ${tokensPerHour}/hour`);
 
-  // Trade performance stats (PAPER + LIVE)
+  // Trade performance stats (PAPER + LIVE) - Current session only
   const totalCompleted = (stats.wins || 0) + (stats.losses || 0);
   if (totalCompleted > 0) {
     const winRate = ((stats.wins || 0) / totalCompleted * 100).toFixed(1);
-    console.log(`\n💰 TRADE PERFORMANCE:`);
+    console.log(`\n💰 TRADE PERFORMANCE (Current Session):`);
     console.log(`   Total Completed: ${totalCompleted}`);
     console.log(`   Wins: ${stats.wins || 0}`);
     console.log(`   Losses: ${stats.losses || 0}`);
@@ -2646,14 +2656,14 @@ function printStatus(): void {
 
       console.log('   ✅ Cleanup complete');
 
-      // Calculate runtime
-      const runtime = Math.floor((Date.now() - stats.startTime.getTime()) / 1000);
+      // Calculate runtime for current session
+      const runtime = Math.floor((Date.now() - sessionStartTime.getTime()) / 1000);
       const hours = Math.floor(runtime / 3600);
       const minutes = Math.floor((runtime % 3600) / 60);
       const seconds = runtime % 60;
-      
-      console.log(`\n📊 FINAL BOT STATISTICS`);
-      console.log(`Runtime: ${hours}h ${minutes}m ${seconds}s`);
+
+      console.log(`\n📊 FINAL SESSION STATISTICS`);
+      console.log(`Session Runtime: ${hours}h ${minutes}m ${seconds}s`);
       console.log(`Tokens Detected: ${stats.tokensDetected}`);
       console.log(`Tokens Bought: ${stats.tokensBought}`);
       console.log(`Tokens Rejected: ${stats.tokensRejected}`);

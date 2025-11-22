@@ -1,0 +1,9 @@
+
+> sol-bot-sniper@5.0.0 prebuild
+> echo 'Config check disabled for live trading'
+
+'Config check disabled for live trading'
+
+> sol-bot-sniper@5.0.0 build
+> tsc
+

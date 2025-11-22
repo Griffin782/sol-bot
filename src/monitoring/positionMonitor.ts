@@ -22,6 +22,10 @@ import axios from "axios";
 import { tokenHealthMonitor } from "./tokenHealthMonitor"; // Phase 3: Track token activity for adaptive exits
 import { sharedState } from "../core/sharedState"; // For lifecycle integration price updates
 import { metadataCache } from "../detection/metadataCache"; // NEW: Metadata caching
+import bs58 from "bs58";
+import util from "util";
+import { validatePubkeys } from "../utils/yellowstoneFilterUtils";
+
 
 export interface PositionPrice {
   mint: string;
@@ -106,10 +110,24 @@ export class PositionMonitor {
       if (position.dex === "pumpfun") {
         try {
           const bondingCurveInfo = derivePumpFunBondingCurve(position.mint);
-          this.bondingCurveAddresses.set(position.mint, bondingCurveInfo.poolAddress);
-          console.log(`[Position Monitor] Bonding curve for ${position.mint}: ${bondingCurveInfo.poolAddress}`);
+          const curveAddr = bondingCurveInfo.poolAddress;
+
+          if (!this.isValidSolanaAddress(curveAddr)) {
+            console.warn(
+              `[Position Monitor] Derived bonding curve address for ${position.mint} is invalid, skipping: "${curveAddr}"`
+            );
+          } else {
+            this.bondingCurveAddresses.set(position.mint, curveAddr);
+            this.debugKey(`bondingCurve(${position.mint})`, curveAddr);
+            console.log(
+              `[Position Monitor] Bonding curve for ${position.mint}: ${curveAddr}`
+            );
+          }
         } catch (error) {
-          console.warn(`[Position Monitor] Could not derive bonding curve for ${position.mint}:`, error);
+          console.warn(
+            `[Position Monitor] Could not derive bonding curve for ${position.mint}:`,
+            error
+          );
           // Gracefully continue - will use transaction-based monitoring only
         }
       }
@@ -227,16 +245,108 @@ export class PositionMonitor {
 
   /**
    * PHASE 4B: Validate Solana address for Yellowstone subscription
-   * Ensures address is valid base58 string of correct length
+   * Ensures address is valid base58 string of correct length (32 bytes when decoded)
    */
-  private isValidSolanaAddress(address: any): boolean {
-    if (!address) return false;
-    if (typeof address !== 'string') return false;
-    if (address.length < 32 || address.length > 44) return false;
+  private isValidSolanaAddress(addr: string | undefined | null): boolean {
+    if (!addr || typeof addr !== "string") return false;
 
-    // Check for base58 characters only (no 0, O, I, l)
-    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
-    return base58Regex.test(address);
+    try {
+      const decoded = bs58.decode(addr);
+      if (decoded.length !== 32) {
+        console.warn(
+          `[Position Monitor] Invalid pubkey length: ${addr} (decoded len=${decoded.length}, expected 32)`
+        );
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn(
+        `[Position Monitor] Invalid base58 address: "${addr}" – ${String(e)}`
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Debug helper: Log address validation details
+   */
+  private debugKey(label: string, value: string | undefined | null): boolean {
+    if (!value) {
+      console.warn(`[Position Monitor] ${label}: empty or undefined`);
+      return false;
+    }
+
+    try {
+      const decoded = bs58.decode(value);
+      console.log(
+        `[Position Monitor] ${label}: base58="${value}", decodedLen=${decoded.length}`
+      );
+      return decoded.length === 32;
+    } catch (e) {
+      console.warn(
+        `[Position Monitor] ${label}: invalid base58="${value}" – ${String(e)}`
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Log SubscribeRequest for debugging
+   */
+  private logSubscribeRequest(req: SubscribeRequest): void {
+    console.log(
+      "[POSITION-MONITOR] Final SubscribeRequest:",
+      util.inspect(req, { depth: 5, colors: true })
+    );
+  }
+
+  /**
+   * Build Yellowstone SubscribeRequest with validated pubkeys
+   */
+  private buildPositionMonitorRequest(
+    watchedPools: any[],
+    fromSlot: number | null = null
+  ): SubscribeRequest {
+    // pools → array of { pool: ".", bondingCurve: "." }
+    const safePoolKeys = validatePubkeys(
+      watchedPools.map((w) => w.pool),
+      "pool"
+    );
+
+    const safeBondingKeys = validatePubkeys(
+      watchedPools.map((w) => w.bondingCurve),
+      "bondingCurve"
+    );
+
+    // Flatten into one list of pubkeys
+    const allKeys = [...safePoolKeys, ...safeBondingKeys];
+
+    const request: SubscribeRequest = {
+      commitment: CommitmentLevel.CONFIRMED,
+      accounts: {},
+      slots: {},
+      transactions: {
+        positionMonitor: {
+          vote: false,
+          failed: false,
+          // Yellowstone expects string[] of base58 pubkeys here
+          accountInclude: [],
+          accountExclude: [],
+          accountRequired: allKeys,
+        },
+      },
+      transactionsStatus: {},
+      entry: {},
+      blocks: {},
+      blocksMeta: {},
+      accountsDataSlice: [],
+    };
+
+    if (fromSlot !== null) {
+      request.fromSlot = String(fromSlot);
+    }
+
+    return request;
   }
 
   /**
@@ -253,95 +363,86 @@ export class PositionMonitor {
       return;
     }
 
-    // Get all pool addresses to monitor
-    // PHASE 4B: Validate addresses and filter out invalid ones
-    const poolAddresses = positions
-      .map(p => typeof p.poolAddress === 'string' ? p.poolAddress : (p.poolAddress as any)?.toString())
-      .filter(addr => {
-        if (!this.isValidSolanaAddress(addr)) {
-          console.warn(`[Position Monitor] PHASE 4B: Invalid pool address filtered out: "${addr}" (length: ${addr?.length || 0})`);
-          return false;
-        }
-        return true;
-      });
+    // Build watchedPools array with pool and bonding curve pairs
+    const watchedPools = positions.map(pos => {
+      const poolAddr = typeof pos.poolAddress === "string"
+        ? pos.poolAddress
+        : (pos.poolAddress as any)?.toString();
 
-    // Get all bonding curve addresses (for pump.fun tokens)
-    // PHASE 4B: Validate addresses and filter out invalid ones
-    const bondingCurveAddresses = Array.from(this.bondingCurveAddresses.values())
-      .map(addr => typeof addr === 'string' ? addr : (addr as any)?.toString())
-      .filter(addr => {
-        if (!this.isValidSolanaAddress(addr)) {
-          console.warn(`[Position Monitor] PHASE 4B: Invalid bonding curve address filtered out: "${addr}" (length: ${addr?.length || 0})`);
-          return false;
-        }
-        return true;
-      });
+      // Get bonding curve address for this position's mint (if exists)
+      const bondingCurveAddr = this.bondingCurveAddresses.get(pos.mint) || poolAddr;
 
-    // PHASE 4B: Safety check - don't subscribe with empty address arrays
-    if (poolAddresses.length === 0) {
-      console.warn(`[Position Monitor] PHASE 4B: No valid pool addresses after filtering - keeping connection alive`);
+      return {
+        pool: poolAddr,
+        bondingCurve: bondingCurveAddr,
+        mint: pos.mint, // Track for debugging
+      };
+    });
+
+    console.log(`[Position Monitor] Building subscription for ${watchedPools.length} positions`);
+
+    // DEFENSIVE CHECK: Ensure we have valid watched pools
+    if (!watchedPools.length) {
+      console.warn(`[Position Monitor] No watched pools; skipping subscription update`);
       return;
     }
 
-    // Create updated subscription request (includes bonding curves + metadata)
-    const request: SubscribeRequest = {
-      slots: {},
-      accounts: {
-        ...(poolAddresses.length > 0 && {
-          pool_monitor: {
-            account: poolAddresses,
-            owner: [],
-            filters: [],
-          }
-        }),
-        // Bonding curve monitoring for continuous price updates
-        ...(bondingCurveAddresses.length > 0 && {
-          bonding_curve_monitor: {
-            account: bondingCurveAddresses,
-            owner: [],
-            filters: [],
-          }
-        }),
-        // REMOVED: metadata_monitor (Nov 10, 2025)
-        // Caused "String is the wrong size" gRPC error → infinite reconnect loop → 6min crash
-        // Subscribing to ALL accounts owned by metadata program is too broad (millions of accounts)
-        // Solution: Use on-demand RPC metadata fetching instead (tokenHandler.ts VIP2 retry logic)
-      },
-      transactions: {
-        ...(poolAddresses.length > 0 && {
-          swap_monitor: {
-            vote: false,
-            failed: false,
-            signature: undefined,
-            accountInclude: poolAddresses, // Only transactions touching our pools
-            accountExclude: [],
-            accountRequired: [],
-          }
-        }),
-      },
-      blocks: {},
-      blocksMeta: {},
-      accountsDataSlice: [],
-      commitment: 0, // Processed
-      entry: {},
-      transactionsStatus: {},
-    };
+    // RUNTIME ASSERTION: Validate all watchedPool entries before building request
+    console.log(`[Position Monitor] ===== VALIDATING WATCHED POOLS =====`);
+    let hasInvalidEntries = false;
+    for (let i = 0; i < watchedPools.length; i++) {
+      const w = watchedPools[i];
+      if (!w.pool || !w.bondingCurve) {
+        console.error(`[Position Monitor] ❌ Invalid watchedPool entry [${i}]:`, {
+          index: i,
+          mint: (w as any).mint,
+          pool: w.pool || '(missing)',
+          bondingCurve: w.bondingCurve || '(missing)',
+        });
+        hasInvalidEntries = true;
+      } else {
+        console.log(`[Position Monitor] ✅ [${i}] mint=${(w as any).mint?.substring(0, 8)}... pool=${w.pool.substring(0, 8)}... bc=${w.bondingCurve.substring(0, 8)}...`);
+      }
+    }
 
-    // PHASE 4A DEBUG: Log subscription details before sending update
-    console.log(`[Position Monitor] ===== UPDATE SUBSCRIPTION DEBUG (Phase 4A) =====`);
-    console.log(`[Position Monitor] Pool addresses (${poolAddresses.length}):`);
-    poolAddresses.forEach((addr, i) => {
-      console.log(`  [${i}] ${addr} (length: ${addr.length} chars)`);
-    });
-    console.log(`[Position Monitor] Bonding curve addresses (${bondingCurveAddresses.length}):`);
-    bondingCurveAddresses.forEach((addr, i) => {
-      console.log(`  [${i}] ${addr} (length: ${addr.length} chars)`);
-    });
-    console.log(`[Position Monitor] ===========================================`);
+    if (hasInvalidEntries) {
+      console.error(`[Position Monitor] ❌ Found invalid entries in watchedPools - aborting subscription update`);
+      return;
+    }
+    console.log(`[Position Monitor] ===== ALL ENTRIES VALID =====`);
+
+    // Build validated subscription request using utility function
+    // This will validate all pubkeys and throw if any are invalid
+    let request: SubscribeRequest;
+    try {
+      request = this.buildPositionMonitorRequest(watchedPools);
+      console.log(`[Position Monitor] ✅ Successfully built subscription request with validated pubkeys`);
+    } catch (error) {
+      console.error(`[Position Monitor] ❌ Failed to build subscription request:`, error);
+      console.error(`[Position Monitor] Watched pools data:`, JSON.stringify(watchedPools, null, 2));
+      return;
+    }
+
+    // CRITICAL: Log the EXACT request that will be sent to Yellowstone
+    console.log(`[POSITION-MONITOR] FINAL SubscribeRequest (LIVE - updateSubscription):\n${util.inspect(request, { depth: 10, colors: false })}`);
+
+    // VERIFY: Check that accountRequired contains the expected number of pubkeys
+    const accountRequired = request.transactions?.positionMonitor?.accountRequired;
+    const expectedCount = watchedPools.length * 2; // pool + bondingCurve per position
+    if (accountRequired && Array.isArray(accountRequired)) {
+      console.log(`[Position Monitor] 🔍 Verification: accountRequired has ${accountRequired.length} pubkeys (expected ${expectedCount})`);
+      if (accountRequired.length !== expectedCount) {
+        console.warn(`[Position Monitor] ⚠️  WARNING: Pubkey count mismatch! Expected ${expectedCount}, got ${accountRequired.length}`);
+      }
+    } else {
+      console.error(`[Position Monitor] ❌ CRITICAL: accountRequired is not an array or is missing!`);
+      return;
+    }
 
     // Send updated subscription (reuses existing connection)
+    // IMPORTANT: Sending the SAME request object with NO mutations
     this.grpcStream.write(request);
-    console.log(`[Position Monitor] Updated subscription: ${poolAddresses.length} pools + ${bondingCurveAddresses.length} bonding curves`);
+    console.log(`[Position Monitor] ✅ Updated subscription: ${watchedPools.length} positions monitored`);
   }
 
   /**
@@ -384,92 +485,86 @@ export class PositionMonitor {
       return;
     }
 
-    // Get all pool addresses to monitor
-    // PHASE 4B: Validate addresses and filter out invalid ones
-    const poolAddresses = positions
-      .map(p => typeof p.poolAddress === 'string' ? p.poolAddress : (p.poolAddress as any)?.toString())
-      .filter(addr => {
-        if (!this.isValidSolanaAddress(addr)) {
-          console.warn(`[Position Monitor] PHASE 4B: Invalid pool address filtered out: "${addr}" (length: ${addr?.length || 0})`);
-          return false;
-        }
-        return true;
-      });
+    // Build watchedPools array with pool and bonding curve pairs
+    const watchedPools = positions.map(pos => {
+      const poolAddr = typeof pos.poolAddress === "string"
+        ? pos.poolAddress
+        : (pos.poolAddress as any)?.toString();
 
-    // Get all bonding curve addresses (for pump.fun tokens)
-    // PHASE 4B: Validate addresses and filter out invalid ones
-    const bondingCurveAddresses = Array.from(this.bondingCurveAddresses.values())
-      .map(addr => typeof addr === 'string' ? addr : (addr as any)?.toString())
-      .filter(addr => {
-        if (!this.isValidSolanaAddress(addr)) {
-          console.warn(`[Position Monitor] PHASE 4B: Invalid bonding curve address filtered out: "${addr}" (length: ${addr?.length || 0})`);
-          return false;
-        }
-        return true;
-      });
+      // Get bonding curve address for this position's mint (if exists)
+      const bondingCurveAddr = this.bondingCurveAddresses.get(pos.mint) || poolAddr;
 
-    // PHASE 4B: Safety check - don't subscribe with empty address arrays
-    if (poolAddresses.length === 0) {
-      console.warn(`[Position Monitor] PHASE 4B: No valid pool addresses after filtering - skipping subscription`);
+      return {
+        pool: poolAddr,
+        bondingCurve: bondingCurveAddr,
+        mint: pos.mint, // Track for debugging
+      };
+    });
+
+    console.log(`[Position Monitor] Setting up subscription for ${watchedPools.length} positions`);
+
+    // DEFENSIVE CHECK: Ensure we have valid watched pools
+    if (!watchedPools.length) {
+      console.warn(`[Position Monitor] No watched pools; skipping subscription setup`);
       return;
     }
 
-    // Create subscription request for both pools AND bonding curves
-    const request: SubscribeRequest = {
-      slots: {},
-      accounts: {
-        ...(poolAddresses.length > 0 && {
-          pool_monitor: {
-            account: poolAddresses,
-            owner: [],
-            filters: [],
-          }
-        }),
-        // CRITICAL: Bonding curve account monitoring provides continuous price updates
-        // Updates every block (~400ms) even when no swaps occurring
-        ...(bondingCurveAddresses.length > 0 && {
-          bonding_curve_monitor: {
-            account: bondingCurveAddresses,
-            owner: [],
-            filters: [],
-          }
-        }),
-      },
-      transactions: {
-        ...(poolAddresses.length > 0 && {
-          swap_monitor: {
-            vote: false,
-            failed: false,
-            signature: undefined,
-            accountInclude: poolAddresses, // Only transactions touching our pools
-            accountExclude: [],
-            accountRequired: [],
-          }
-        }),
-      },
-      blocks: {},
-      blocksMeta: {},
-      accountsDataSlice: [],
-      commitment: 0, // Processed
-      entry: {},
-      transactionsStatus: {},
-    };
+    // RUNTIME ASSERTION: Validate all watchedPool entries before building request
+    console.log(`[Position Monitor] ===== VALIDATING WATCHED POOLS (SETUP) =====`);
+    let hasInvalidEntries = false;
+    for (let i = 0; i < watchedPools.length; i++) {
+      const w = watchedPools[i];
+      if (!w.pool || !w.bondingCurve) {
+        console.error(`[Position Monitor] ❌ Invalid watchedPool entry [${i}]:`, {
+          index: i,
+          mint: (w as any).mint,
+          pool: w.pool || '(missing)',
+          bondingCurve: w.bondingCurve || '(missing)',
+        });
+        hasInvalidEntries = true;
+      } else {
+        console.log(`[Position Monitor] ✅ [${i}] mint=${(w as any).mint?.substring(0, 8)}... pool=${w.pool.substring(0, 8)}... bc=${w.bondingCurve.substring(0, 8)}...`);
+      }
+    }
 
-    // PHASE 4A DEBUG: Log subscription details before sending
-    console.log(`[Position Monitor] ===== SUBSCRIPTION DEBUG (Phase 4A) =====`);
-    console.log(`[Position Monitor] Pool addresses (${poolAddresses.length}):`);
-    poolAddresses.forEach((addr, i) => {
-      console.log(`  [${i}] ${addr} (length: ${addr.length} chars)`);
-    });
-    console.log(`[Position Monitor] Bonding curve addresses (${bondingCurveAddresses.length}):`);
-    bondingCurveAddresses.forEach((addr, i) => {
-      console.log(`  [${i}] ${addr} (length: ${addr.length} chars)`);
-    });
-    console.log(`[Position Monitor] ===========================================`);
+    if (hasInvalidEntries) {
+      console.error(`[Position Monitor] ❌ Found invalid entries in watchedPools - aborting subscription setup`);
+      return;
+    }
+    console.log(`[Position Monitor] ===== ALL ENTRIES VALID =====`);
+
+    // Build validated subscription request using utility function
+    // This will validate all pubkeys and throw if any are invalid
+    let request: SubscribeRequest;
+    try {
+      request = this.buildPositionMonitorRequest(watchedPools);
+      console.log(`[Position Monitor] ✅ Successfully built subscription request with validated pubkeys`);
+    } catch (error) {
+      console.error(`[Position Monitor] ❌ Failed to build subscription request:`, error);
+      console.error(`[Position Monitor] Watched pools data:`, JSON.stringify(watchedPools, null, 2));
+      return;
+    }
+
+    // CRITICAL: Log the EXACT request that will be sent to Yellowstone
+    console.log(`[POSITION-MONITOR] FINAL SubscribeRequest (LIVE - setupSubscription):\n${util.inspect(request, { depth: 10, colors: false })}`);
+
+    // VERIFY: Check that accountRequired contains the expected number of pubkeys
+    const accountRequired = request.transactions?.positionMonitor?.accountRequired;
+    const expectedCount = watchedPools.length * 2; // pool + bondingCurve per position
+    if (accountRequired && Array.isArray(accountRequired)) {
+      console.log(`[Position Monitor] 🔍 Verification: accountRequired has ${accountRequired.length} pubkeys (expected ${expectedCount})`);
+      if (accountRequired.length !== expectedCount) {
+        console.warn(`[Position Monitor] ⚠️  WARNING: Pubkey count mismatch! Expected ${expectedCount}, got ${accountRequired.length}`);
+      }
+    } else {
+      console.error(`[Position Monitor] ❌ CRITICAL: accountRequired is not an array or is missing!`);
+      return;
+    }
 
     // Send subscription
+    // IMPORTANT: Sending the SAME request object with NO mutations
     this.grpcStream.write(request);
-    console.log(`[Position Monitor] Subscribed to ${poolAddresses.length} pools + ${bondingCurveAddresses.length} bonding curves`);
+    console.log(`[Position Monitor] ✅ Subscribed to ${watchedPools.length} positions`);
   }
 
   /**

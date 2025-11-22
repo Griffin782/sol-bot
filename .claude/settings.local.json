@@ -6,7 +6,12 @@
       "Bash(mkdir:*)",
       "Bash(npx tsc:*)",
       "Bash(cat:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash($null)",
+      "Bash(npx ts-node:*)",
+      "Bash(build-output.txt)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
