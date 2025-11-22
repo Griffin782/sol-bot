@@ -66,3 +66,4 @@ monitored-wallets/*.csv
 # Exclude Windows nul files
 nul
 **/nul
+complete-bot-log.txt

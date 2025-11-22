@@ -11,7 +11,12 @@
       "Bash($null)",
       "Bash(npx ts-node:*)",
       "Bash(build-output.txt)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nNov 22 updates: Position Monitor validation + session runtime fixes\n\nMajor improvements:\n- Fixed session runtime tracking in index.ts (now uses sessionStartTime)\n- Added comprehensive Position Monitor subscription validation\n- Enhanced logging with util.inspect for debugging Yellowstone gRPC\n- Added defensive checks and runtime assertions\n- Created validation test suite for buildPositionMonitorRequest\n- Added yellowstoneFilterUtils for pubkey validation\n- Updated Position Monitor with full request logging\n- Fixed BOT STATUS to show current session vs lifetime stats clearly\n\nNew files:\n- POSITION-MONITOR-SUBSCRIPTION-VALIDATION.md (validation report)\n- test-buildPositionMonitorRequest.ts (test suite)\n- src/utils/yellowstoneFilterUtils.ts (validation utilities)\n\nTechnical changes:\n- buildPositionMonitorRequest now uses accountRequired correctly\n- All subscription updates log exact request before sending\n- Added count verification for accountRequired array\n- Removed stale compiled .js files\n\n🤖 Generated with Claude Code\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(timeout 5 git status:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nNov 22 updates: Position Monitor validation + session runtime fixes\n\nMajor improvements:\n- Fixed session runtime tracking in index.ts (now uses sessionStartTime)\n- Added comprehensive Position Monitor subscription validation  \n- Enhanced logging with util.inspect for debugging Yellowstone gRPC\n- Added defensive checks and runtime assertions\n- Created validation test suite for buildPositionMonitorRequest\n- Added yellowstoneFilterUtils for pubkey validation\n- Updated Position Monitor with full request logging\n- Fixed BOT STATUS to show current session vs lifetime stats clearly\n\nNew files:\n- POSITION-MONITOR-SUBSCRIPTION-VALIDATION.md (validation report)\n- test-buildPositionMonitorRequest.ts (test suite)\n- src/utils/yellowstoneFilterUtils.ts (validation utilities)\n\nTechnical changes:\n- buildPositionMonitorRequest now uses accountRequired correctly\n- All subscription updates log exact request before sending\n- Added count verification for accountRequired array\n- Removed stale compiled .js files\n- Excluded 34MB complete-bot-log.txt from git (too large)\n\n🤖 Generated with Claude Code\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
