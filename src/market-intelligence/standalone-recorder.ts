@@ -7,7 +7,7 @@ import { MarketRecorder } from './handlers/market-recorder';
 import { getMarketIntelligenceConfig } from './config/mi-config';
 import { Connection, PublicKey } from '@solana/web3.js';
 import WebSocket from 'ws';
-import { validateEnv } from '../src/utils/env-validator';
+import { validateEnv } from '../utils/env-validator';
 
 // Helper function to extract mint from WebSocket message
 function extractMintFromLogs(logs: string[]): string | null {

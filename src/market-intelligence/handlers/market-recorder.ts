@@ -14,7 +14,7 @@ import {
   getCurrentDatabasePath,
   shouldRecordToken
 } from '../config/mi-config';
-import { derivePumpFunBondingCurve } from '../../src/utils/poolDerivation';
+import { derivePumpFunBondingCurve } from '../../utils/poolDerivation';
 
 // ============================================
 // HELPER FUNCTIONS
