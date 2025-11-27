@@ -59,25 +59,27 @@ export interface ExitResult {
 // ============================================
 // DEFAULT EXIT TIER CONFIGURATION
 // ============================================
+// ⚠️ TEMPORARY TEST VALUES - Lower multipliers for quick exit testing
+// Revert to production values (2x, 4x, 6x) after verification!
 
 export const DEFAULT_EXIT_TIERS = [
   {
-    name: "Tier 1 - First Profit",
-    multiplier: 2,           // Sell at 2x
+    name: "Tier 1 - First Profit (TEST)",
+    multiplier: 1.05,        // 5% gain - TEMPORARY for testing
     percentage: 25,          // Sell 25% of original
     triggerPrice: 0,         // Calculated at runtime
     executed: false
   },
   {
-    name: "Tier 2 - Strong Gain",
-    multiplier: 4,           // Sell at 4x
+    name: "Tier 2 - Strong Gain (TEST)",
+    multiplier: 1.10,        // 10% gain - TEMPORARY for testing
     percentage: 25,          // Sell 25% of original
     triggerPrice: 0,         // Calculated at runtime
     executed: false
   },
   {
-    name: "Tier 3 - Major Win",
-    multiplier: 6,           // Sell at 6x
+    name: "Tier 3 - Major Win (TEST)",
+    multiplier: 1.20,        // 20% gain - TEMPORARY for testing
     percentage: 25,          // Sell 25% of original
     triggerPrice: 0,         // Calculated at runtime
     executed: false
@@ -90,6 +92,19 @@ export const DEFAULT_EXIT_TIERS = [
     executed: false
   }
 ];
+
+// ============================================
+// PRODUCTION EXIT TIER CONFIGURATION (COMMENTED OUT)
+// ============================================
+// Uncomment these and comment out TEST values above for production:
+/*
+export const DEFAULT_EXIT_TIERS = [
+  { name: "Tier 1 - First Profit", multiplier: 2, percentage: 25, triggerPrice: 0, executed: false },
+  { name: "Tier 2 - Strong Gain", multiplier: 4, percentage: 25, triggerPrice: 0, executed: false },
+  { name: "Tier 3 - Major Win", multiplier: 6, percentage: 25, triggerPrice: 0, executed: false },
+  { name: "Tier 4 - Moonbag", multiplier: Infinity, percentage: 25, triggerPrice: Infinity, executed: false }
+];
+*/
 
 // ============================================
 // PARTIAL EXIT MANAGER CLASS

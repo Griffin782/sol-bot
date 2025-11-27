@@ -6,7 +6,7 @@
     "build": "npm run clean && tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "clean": "rm -rf dist",
+    "clean": "node -e \"const fs=require('fs'); const path=require('path'); const dir=path.join(process.cwd(),'dist'); if(fs.existsSync(dir)) fs.rmSync(dir,{recursive:true,force:true}); console.log('Cleaned dist/')\"",
     "analyze": "ts-node src/enhanced/analyze-trading-session.ts",
     "monitor": "ts-node src/live-monitor.ts",
     "test-email": "node send_test_email.js",
@@ -32,7 +32,9 @@
     "mi-test": "ts-node src/market-intelligence/test-setup.ts",
     "check-db": "ts-node src/market-intelligence/check-database-status.ts",
     "post-check": "ts-node scripts/post-session-check.ts",
-    "verify-fixes": "ts-node scripts/verify-critical-fixes.ts"
+    "verify-fixes": "ts-node scripts/verify-critical-fixes.ts",
+    "validate:repo": "ts-node scripts/validate-repo-structure.ts",
+    "safe:build": "ts-node scripts/validate-safe-build.ts"
   },
   "keywords": [
     "solana",

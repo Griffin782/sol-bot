@@ -27,6 +27,8 @@ import { validateJupiterSetup } from './utils/simple-jupiter-validator';
 import { MarketRecorder } from './market-intelligence/handlers/market-recorder';
 import { getMarketIntelligenceConfig, SessionConfig } from './market-intelligence/config/mi-config';
 import { PartialExitManager, ExitResult } from './core/PARTIAL-EXIT-SYSTEM';
+import { SellExecutor } from "./trading/sellExecutor";
+import { cleanupLegacyPositions } from "./maintenance/legacyCleanup";
 import { HandledMint, NewPositionRecord } from "./types";
 import { logEngine } from "./utils/managers/logManager";
 import { deletePositionByWalletAndMint, deletePositionsByWallet, getPositionByMint, selectAllPositions, updatePositionTokenAmount } from "./tracker/db";
@@ -230,7 +232,8 @@ let scanningPaused = false;
 // ============================================
 // PARTIAL EXIT SYSTEM (NEW - Oct 28, 2025)
 // ============================================
-let partialExitManager: PartialExitManager | null = null; 
+let partialExitManager: PartialExitManager | null = null;
+let sellExecutor: SellExecutor | null = null; 
 
 // Mode now controlled by UNIFIED-CONTROL.ts (imported via CONFIG-BRIDGE)
 // To change mode: Edit src/core/UNIFIED-CONTROL.ts line 272
@@ -238,21 +241,40 @@ let partialExitManager: PartialExitManager | null = null;
 const MIN_TIME_BETWEEN_TRADES = 10000; // 10 seconds minimum
 console.log("🎯 Trading Mode:", TEST_MODE ? "PAPER (Test Mode)" : "LIVE (Real Trades)");
 
-// Statistics tracking
+// Statistics tracking - SEPARATED: Session vs Lifetime
 const stats = {
-  startTime: new Date(),
-  tokensDetected: 0,
-  tokensBought: 0,
-  tokensRejected: 0,
-  tokensBlocked: 0,  // Quality filter blocks
-  poolDepleted: 0,
-  totalTrades: 0,
-  wins: 0,           // Paper trading wins
-  losses: 0          // Paper trading losses
+  // LIFETIME counters (never reset during runtime)
+  lifetimeStartTime: new Date(),          // When bot first started
+  lifetimeTokensDetected: 0,
+  lifetimeTokensBought: 0,
+  lifetimeTokensRejected: 0,
+  lifetimeTokensBlocked: 0,
+  lifetimePoolDepleted: 0,
+  lifetimeTotalTrades: 0,
+  lifetimeWins: 0,
+  lifetimeLosses: 0,
+
+  // CURRENT SESSION counters (reset each new session)
+  sessionStartTime: new Date(),           // When current session started
+  tokensDetected: 0,                      // Session tokens detected
+  tokensBought: 0,                        // Session tokens bought
+  tokensRejected: 0,                      // Session tokens rejected
+  tokensBlocked: 0,                       // Session quality filter blocks
+  poolDepleted: 0,                        // Session pool depleted skips
+  totalTrades: 0,                         // Session total trades
+  wins: 0,                                // Session paper trading wins
+  losses: 0,                              // Session paper trading losses
+
+  // Legacy compatibility (points to session values)
+  startTime: new Date(),                  // Kept for backward compat, same as sessionStartTime
 };
 
-// Session start time - tracks when current session began (not lifetime)
-let sessionStartTime: Date = new Date();
+// Helper to increment both session and lifetime counters
+function incrementStat(statName: 'tokensDetected' | 'tokensBought' | 'tokensRejected' | 'tokensBlocked' | 'poolDepleted' | 'totalTrades' | 'wins' | 'losses') {
+  stats[statName]++;
+  const lifetimeKey = `lifetime${statName.charAt(0).toUpperCase() + statName.slice(1)}` as keyof typeof stats;
+  (stats[lifetimeKey] as number)++;
+}
 
 // Import and initialize tax tracker
 import { AdvancedBotManager } from './advanced-features';
@@ -360,7 +382,7 @@ async function addToQueue(tokenMint: string) {
   // ✅ FIX Bug #7: Check queue size before adding
   if (tokenQueue.length >= MAX_QUEUE_SIZE) {
     console.log(`⚠️ Queue full (${MAX_QUEUE_SIZE}) - dropping token: ${tokenMint.slice(0,8)}...`);
-    stats.tokensRejected++;
+    incrementStat('tokensRejected');
     return;
   }
 
@@ -380,7 +402,7 @@ async function addToQueue(tokenMint: string) {
       logEngine.writeLog(`${getCurrentTime()}`, `✅ Token authorities renounced`, "green");
     } else {
       logEngine.writeLog(`${getCurrentTime()}`, `❌ Token has active authorities, skipping...`, "red");
-      stats.tokensRejected++;
+      incrementStat('tokensRejected');
       return;
     }
 
@@ -389,14 +411,14 @@ async function addToQueue(tokenMint: string) {
 
     if (config.entry?.maxAge && ageInMinutes > config.entry.maxAge) {
       logEngine.writeLog(`${getCurrentTime()}`, `❌ Token too old (${ageInMinutes.toFixed(1)} min), skipping...`, "red");
-      stats.tokensRejected++;
+      incrementStat('tokensRejected');
       return;
     }
 
     const isSecure = await isTokenSecureAndAllowed(tokenMint);
     if (!isSecure) {
       logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed security checks, skipping...`, "red");
-      stats.tokensRejected++;
+      incrementStat('tokensRejected');
       return;
     }
 
@@ -404,7 +426,7 @@ async function addToQueue(tokenMint: string) {
       const rugCheckPassed = await getRugCheckConfirmed(tokenMint, logEngine);
       if (!rugCheckPassed) {
         logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed rug check, skipping...`, "red");
-        stats.tokensRejected++;
+        incrementStat('tokensRejected');
         return;
       }
     }
@@ -430,7 +452,7 @@ async function addToQueue(tokenMint: string) {
     const isSecure = await isTokenSecureAndAllowed(tokenMint);
     if (!isSecure) {
       logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed basic checks, skipping...`, "red");
-      stats.tokensRejected++;
+      incrementStat('tokensRejected');
       return;
     }
 
@@ -454,7 +476,7 @@ async function addToQueue(tokenMint: string) {
     const authorities = await getTokenAuthorities(tokenMint);
     if (authorities.hasMintAuthority || authorities.hasFreezeAuthority) {
       logEngine.writeLog(`${getCurrentTime()}`, `❌ Token has authorities, skipping...`, "red");
-      stats.tokensRejected++;
+      incrementStat('tokensRejected');
       return;
     }
 
@@ -482,7 +504,7 @@ async function addToQueue(tokenMint: string) {
       const isRugged = await getRugCheckConfirmed(tokenMint, logEngine);
       if (isRugged) {
         logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed rug check, skipping...`, "red");
-        stats.tokensRejected++;
+        incrementStat('tokensRejected');
         return;
       }
 
@@ -490,14 +512,14 @@ async function addToQueue(tokenMint: string) {
       const passedQualityFilter = await enforceQualityFilter(tokenMint, logEngine);
       if (!passedQualityFilter) {
         logEngine.writeLog(`${getCurrentTime()}`, `❌ Token failed quality filter, skipping...`, "red");
-        stats.tokensBlocked++;
+        incrementStat('tokensBlocked');
         return;
       }
 
       logEngine.writeLog(`${getCurrentTime()}`, `✅ Token passed all checks!`, "green");
     } else {
       logEngine.writeLog(`${getCurrentTime()}`, `❌ Token has ${authorities.hasMintAuthority ? 'mint' : ''}${authorities.hasFreezeAuthority ? ' freeze' : ''} authority, skipping...`, "red");
-      stats.tokensRejected++;
+      incrementStat('tokensRejected');
       return;
     }
 
@@ -655,16 +677,19 @@ async function resetForLiveTrading(): Promise<void> {
       }
     });
     
-    // Reset in-memory statistics
+    // Reset SESSION statistics only (lifetime counters stay intact)
     stats.tokensDetected = 0;
     stats.tokensBought = 0;
     stats.tokensRejected = 0;
     stats.tokensBlocked = 0;
     stats.poolDepleted = 0;
-    stats.startTime = new Date();
+    stats.totalTrades = 0;
+    stats.wins = 0;
+    stats.losses = 0;
 
     // Reset session start time for accurate runtime tracking
-    sessionStartTime = new Date();
+    stats.sessionStartTime = new Date();
+    stats.startTime = new Date();  // Legacy compat
 
     console.log("\n✅ RESET COMPLETE - READY FOR LIVE TRADING!");
     console.log("   Starting with Session 1");
@@ -685,11 +710,23 @@ async function resetCurrentSessionOnly(): Promise<void> {
   botController.resetToSession(0);
   currentSession = getCurrentSessionInfo();
 
+  // Reset SESSION counters (NOT lifetime)
+  stats.tokensDetected = 0;
+  stats.tokensBought = 0;
+  stats.tokensRejected = 0;
+  stats.tokensBlocked = 0;
+  stats.poolDepleted = 0;
+  stats.totalTrades = 0;
+  stats.wins = 0;
+  stats.losses = 0;
+
   // Reset session start time for accurate runtime tracking
-  sessionStartTime = new Date();
+  stats.sessionStartTime = new Date();
+  stats.startTime = new Date();  // Legacy compat
 
   // Keep totalLifetimeProfit and walletRotationHistory intact!
   console.log(`   📊 Keeping Lifetime NET Profit: $${totalLifetimeProfit.toLocaleString()}`);
+  console.log(`   📊 Keeping Lifetime Tokens Detected: ${stats.lifetimeTokensDetected}`);
   console.log(`   📊 Keeping ${walletRotationHistory.length} previous sessions in history`);
   console.log(`   🔄 Resetting to Session 1 for new run`);
   console.log(`   💰 Starting with: $600 → $7,000 target\n`);
@@ -736,7 +773,7 @@ async function rotateWallet(poolManager: any): Promise<boolean> {
     const walletRecord = {
       sessionNumber: sessionInfo.sessionNumber,
       walletIndex: currentWalletIndex,
-      startTime: sessionStartTime,
+      startTime: stats.sessionStartTime,
       endTime: new Date(),
       initialPool: sessionInfo.initialPool,
       targetPool: sessionInfo.targetPool,
@@ -1187,7 +1224,7 @@ async function startWebSocketListener(): Promise<void> {
                   : (mint?.tokenMint || mint?.toString() || '');
                   
                 if (mintStr) {
-                  stats.tokensDetected++;
+                  incrementStat('tokensDetected');
                   
                   // RATE LIMITING - Check but DON'T increment yet
                   const now = new Date().getMinutes();
@@ -1198,7 +1235,7 @@ async function startWebSocketListener(): Promise<void> {
 
                   if (tradesThisMinute >= MAX_TRADES_PER_MINUTE) {
                     logEngine.writeLog(`${getCurrentTime()}`, `⏸️ Rate limit: Skipping token (${tradesThisMinute} trades this minute)`, "yellow");
-                    stats.tokensRejected++;
+                    incrementStat('tokensRejected');
                     return;
                   }
                   // ❌ REMOVED: tradesThisMinute++ (was counting detections, not actual trades!)
@@ -1242,6 +1279,14 @@ async function startWebSocketListener(): Promise<void> {
 // ============================================
 async function initializePositionMonitor(): Promise<void> {
   try {
+    // Check if already initialized
+    if (globalPositionMonitor) {
+      console.log("[Position Monitor] Already initialized");
+      return;
+    }
+
+    console.log("[Position Monitor] Initializing real-time position monitor...");
+
     // Get current SOL price for USD conversions from CoinGecko (not Jupiter)
     const solPrice = await fetchCurrentSOLPrice(); // Returns price with $170 fallback
 
@@ -1251,16 +1296,26 @@ async function initializePositionMonitor(): Promise<void> {
       solPrice
     );
 
-    // Set up real-time price update callback for instant exit signals
-    globalPositionMonitor.onPriceUpdate(async (mint, priceUSD) => {
-      // Trigger exit strategy check on price updates
+    // Wire price updates to PartialExitManager for exit tier checking
+    globalPositionMonitor.onPriceUpdate(async (mint, currentPriceSOL) => {
+      // Debug: confirm SOL price flow from PositionMonitor
+      console.log(
+        `[PRICE-DEBUG] ${mint.slice(0, 8)}... currentPriceSOL=${currentPriceSOL.toExponential(6)}`
+      );
+
       if (partialExitManager && !shutdownInProgress) {
         try {
+          // Ensure this position is still tracked
           const positions = await getPositionByMint(mint);
           if (positions.length > 0) {
-            const position = positions[0];
-            // Check if exit conditions met
-            await partialExitManager.updatePrice(mint, priceUSD);
+            // Feed accurate SOL price into exit tier system
+            const results = await partialExitManager.updatePrice(mint, currentPriceSOL);
+
+            if (results.length > 0) {
+              console.log(
+                `[EXIT-TIER] ${mint.slice(0, 8)}... triggered ${results.length} tier(s)`
+              );
+            }
           }
         } catch (error) {
           console.log(`⚠️ Error checking exit for ${mint}:`, error);
@@ -1272,8 +1327,157 @@ async function initializePositionMonitor(): Promise<void> {
     await globalPositionMonitor.start();
     logEngine.writeLog(`👁️ Position Monitor`, `Real-time price tracking ACTIVE (${solPrice} SOL/USD)`, "blue", true);
   } catch (error) {
+    console.error("[Position Monitor] Failed to initialize:", error);
     logEngine.writeLog(`⚠️ Position Monitor`, `Failed to start: ${error}`, "yellow");
     globalPositionMonitor = null;
+  }
+}
+
+// ============================================
+// EXIT PIPELINE DEBUG CHECKLIST
+// ============================================
+function printExitPipelineChecklist(mint: string) {
+  console.log(`
+================= EXIT PIPELINE CHECKLIST =================
+Token: ${mint.slice(0,8)}...
+
+1. Detection + PAPER BUY
+   ✓ Token detected
+   ✓ PAPER buy executed
+   ✓ Entry price & tiers printed
+
+2. Registration
+   ✓ Registered with PartialExitManager
+   ✓ Added to PositionMonitor
+   ✓ Bonding curve validated (32 bytes)
+
+3. Price Feed
+   ✓ [PRICE-DEBUG] lines appearing
+   ✓ No INVALID_ARGUMENT errors
+   ✓ No invalid watchedPool entries
+
+4. Tier Trigger
+   ✓ [EXIT-TIER] logs visible on threshold hit
+
+5. SellExecutor
+   ✓ [PAPER TRADE] partial sell logs
+   ✓ Remaining tokens updated
+
+===========================================================
+  `);
+}
+
+// ============================================
+// PARTIAL EXIT SYSTEM + SELL EXECUTOR WIRING
+// ============================================
+function initializeExitSystem(logEngineInstance: typeof logEngine): void {
+  if (!partialExitManager) {
+    partialExitManager = new PartialExitManager();
+  }
+
+  if (!sellExecutor) {
+    sellExecutor = new SellExecutor(
+      {
+        BUY_PROVIDER,
+        SIM_MODE,
+        WSOL_MINT,
+      },
+      logEngineInstance
+    );
+  }
+
+  // Wire triggered exit tiers to SellExecutor
+  partialExitManager.onExit(async (mint, tier, result) => {
+    if (!sellExecutor) return;
+
+    const percent = tier.percentage;
+    const reason = `📈 ${tier.name}: Taking ${percent}% at ~${tier.multiplier}x`;
+
+    console.log(
+      `[EXIT] Triggered ${tier.name} for ${mint.slice(
+        0,
+        8
+      )}... – selling ${percent}%`
+    );
+
+    try {
+      const ok = await sellExecutor.executePartialSell(
+        mint,
+        percent,
+        tier.name,
+        reason
+      );
+
+      if (!ok) {
+        console.error(
+          `[EXIT] SellExecutor failed for ${mint.slice(0, 8)}... at ${tier.name}`
+        );
+      }
+    } catch (err) {
+      console.error(
+        `[EXIT] Error in SellExecutor for ${mint.slice(0, 8)}...:`,
+        err
+      );
+    }
+  });
+
+  console.log('✅ Exit System initialized with SellExecutor wiring');
+}
+
+// ============================================
+// REGISTER NEW POSITIONS FOR MONITORING
+// ============================================
+async function registerNewPositionForMonitoring(
+  mint: string,
+  poolAddress: string,
+  dex: "raydium" | "pumpfun" | "pumpswap",
+  investedSOL: number,
+  tokenAmount: number
+): Promise<void> {
+  try {
+    if (!partialExitManager || !globalPositionMonitor) {
+      console.warn(
+        "[Position Registration] Exit system or monitor not ready"
+      );
+      return;
+    }
+
+    const entryPriceSOL =
+      tokenAmount > 0 ? investedSOL / tokenAmount : 0;
+
+    if (!entryPriceSOL || !isFinite(entryPriceSOL)) {
+      console.warn(
+        `[Position Registration] Invalid entry price for ${mint.slice(0, 8)}...`
+      );
+      return;
+    }
+
+    // 1) Register with Partial Exit System
+    partialExitManager.addPosition(
+      mint,
+      entryPriceSOL,
+      tokenAmount,
+      investedSOL
+    );
+
+    // 2) Register with PositionMonitor for real-time price tracking
+    const position: MonitoredPosition = {
+      mint,
+      poolAddress,
+      entryPriceSOL,
+      entryPriceUSD: 0, // Will be updated by monitor
+      tokenAmount,
+      entryTime: new Date(),
+      dex,
+    };
+
+    await globalPositionMonitor.addPosition(position);
+
+    console.log(
+      `[Position Registration] Monitoring started for ${mint.slice(0, 8)}...`
+    );
+  } catch (err) {
+    console.error("[Position Registration] Failed:", err);
   }
 }
 
@@ -1372,7 +1576,7 @@ async function startGrpcListener(): Promise<void> {
       const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
       handledMints = handledMints.filter(m => m.timestamp > fiveMinutesAgo);
 
-      stats.tokensDetected++;
+      incrementStat('tokensDetected');
 
       // RATE LIMITING
       const now = new Date().getMinutes();
@@ -1383,7 +1587,7 @@ async function startGrpcListener(): Promise<void> {
 
       if (tradesThisMinute >= MAX_TRADES_PER_MINUTE) {
         logEngine.writeLog(`${getCurrentTime()}`, `⏸️ Rate limit: Skipping token (${tradesThisMinute} trades this minute)`, "yellow");
-        stats.tokensRejected++;
+        incrementStat('tokensRejected');
         return;
       }
 
@@ -1484,7 +1688,7 @@ async function processPurchase(tokenMint: string): Promise<void> {
 if (recentBuys.has(returnedMint)) {
   console.log("⛔ EARLY RETURN at line 1035: DUPLICATE BLOCKED");
   logEngine.writeLog(`${getCurrentTime()}`, `⚠️ DUPLICATE BLOCKED: Already bought ${returnedMint.slice(0, 8)}...`, "yellow");
-  stats.tokensRejected++;
+  incrementStat('tokensRejected');
   activeTransactions--;  // ADD THIS - decrement counter
   return;
 }
@@ -1495,7 +1699,7 @@ console.log("📍 Checkpoint 2: Passed duplicate check");
 if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
   console.log("⛔ EARLY RETURN at line 1044: Token already in queue");
   logEngine.writeLog(`${getCurrentTime()}`, `⚠️ DUPLICATE: Token already in queue`, "yellow");
-  stats.tokensRejected++;
+  incrementStat('tokensRejected');
   activeTransactions--;  // ADD THIS
   return;
 }
@@ -1507,7 +1711,7 @@ if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
       if (poolManager && !poolManager.canExecuteTrade?.()) {
         console.log("⛔ EARLY RETURN at line 1055: Pool depleted");
         logEngine.writeLog(`${getCurrentTime()}`, `Pool depleted, skipping trade`, "yellow");
-        stats.poolDepleted++;
+        incrementStat('poolDepleted');
         return;
       }
       console.log("📍 Checkpoint 3: Passed pool check");
@@ -1552,43 +1756,21 @@ if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
     console.log(`   Entry Price: ${simulatedEntryPriceSOL.toFixed(10)} SOL/token`);
     console.log(`   Entry Price USD: $${simulatedEntryPriceUSD.toFixed(8)}`);
 
-    // Add to Partial Exit Manager (tracks exit signals)
-    if (partialExitManager) {
-      try {
-        partialExitManager.addPosition(
-          returnedMint,              // Token mint address
-          simulatedEntryPriceSOL,    // Entry price in SOL per token
-          simulatedTokenAmount,      // Amount of tokens bought
-          actualBuyAmount,           // SOL invested (matches LIVE logic)
-          undefined                  // Symbol (optional)
-        );
-        console.log(`✅ [PAPER TRADING] Position added to exit tracking`);
-      } catch (exitError) {
-        console.warn('⚠️ [PAPER TRADING] Failed to add to exit tracking:', exitError);
-      }
-    }
+    // Register with both PartialExitManager and PositionMonitor via unified function
+    await registerNewPositionForMonitoring(
+      returnedMint,            // Token mint
+      "",                      // Pool address (simulated)
+      "pumpfun",               // DEX source
+      actualBuyAmount,         // SOL invested
+      simulatedTokenAmount     // Simulated tokens
+    );
+    console.log(`✅ [PAPER TRADING] Position registered for exit tracking and monitoring`);
 
-    // Add to Position Monitor (tracks real-time price)
-    if (globalPositionMonitor) {
-      try {
-        const monitoredPosition: MonitoredPosition = {
-          mint: returnedMint,
-          poolAddress: "", // Derive from token if needed
-          entryPriceSOL: simulatedEntryPriceSOL,
-          entryPriceUSD: simulatedEntryPriceUSD,
-          tokenAmount: simulatedTokenAmount,
-          entryTime: new Date(),
-          dex: "pumpfun" // Assume pump.fun for now
-        };
-        await globalPositionMonitor.addPosition(monitoredPosition);
-        console.log(`👁️ [PAPER TRADING] Position added to real-time monitoring`);
-      } catch (monitorError) {
-        console.warn('⚠️ [PAPER TRADING] Failed to add to price monitor:', monitorError);
-      }
-    }
+    // Print exit pipeline checklist for verification
+    printExitPipelineChecklist(returnedMint);
 
     // ✅ Mirror LIVE behaviour: mark as bought & block duplicates
-    stats.tokensBought++;
+    incrementStat('tokensBought');
     stats.totalTrades++;
 
     // PERMANENT duplicate protection, same as LIVE branch
@@ -1636,7 +1818,7 @@ if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
     const qualityPassed = await enforceQualityFilter(returnedMint, logEngine);
     if (!qualityPassed) {
       console.log("🚫 Token failed quality filter - BLOCKED");
-      stats.tokensBlocked++;
+      incrementStat('tokensBlocked');
       return;
     }
     console.log("✅ Token passed quality filter - proceeding to trade");
@@ -1663,7 +1845,7 @@ if (queueManager && queueManager.hasTokenInQueue?.(returnedMint)) {
     //if (!safetyResult.success) {
       //console.log(`🚫 TRADE BLOCKED: ${safetyResult.reason}`);
       //logEngine.writeLog(`${getCurrentTime()}`, `❌ Trade blocked: ${safetyResult.reason}`, "red");
-      //stats.tokensRejected++;
+      //incrementStat('tokensRejected');
       //return;
    //}
 
@@ -1709,7 +1891,7 @@ if (result) {
     const qualityPassed = await enforceQualityFilter(returnedMint, logEngine);
     if (!qualityPassed) {
       console.log("🚫 Token failed quality filter - BLOCKED");
-      stats.tokensBlocked++;
+      incrementStat('tokensBlocked');
       return;
     }
     console.log("✅ Token passed quality filter - proceeding to trade");
@@ -1817,7 +1999,7 @@ if (swapResult && swapResult.success) {
     const qualityPassed = await enforceQualityFilter(returnedMint, logEngine);
     if (!qualityPassed) {
       console.log("🚫 Token failed quality filter - BLOCKED");
-      stats.tokensBlocked++;
+      incrementStat('tokensBlocked');
       return;
     }
     console.log("✅ Token passed quality filter - proceeding to trade");
@@ -1844,7 +2026,7 @@ if (swapResult && swapResult.success) {
     //if (!safetyResult.success) {
       //console.log(`🚫 TRADE BLOCKED: ${safetyResult.reason}`);
       //logEngine.writeLog(`${getCurrentTime()}`, `❌ Trade blocked: ${safetyResult.reason}`, "red");
-      //stats.tokensRejected++;
+      //incrementStat('tokensRejected');
       //return;
     //}
 
@@ -1912,52 +2094,29 @@ if (swapResult && swapResult.success) {
   
   // Update pool and tracking if successful
   if (swapResult && swapResult.success) {
-    stats.tokensBought++;
+    incrementStat('tokensBought');
     stats.totalTrades++;
 
     // ============================================
-    // ADD POSITION TO PARTIAL EXIT TRACKING
+    // ADD POSITION TO EXIT TRACKING + REAL-TIME MONITORING
     // ============================================
-    if (partialExitManager && swapResult.outputAmount) {
-      try {
-        // Extract actual token amount from swap result
-        const tokenAmount = swapResult.outputAmount; // REAL token amount from Jupiter API
-        const entryPriceSOL = actualBuyAmount / tokenAmount; // Calculate entry price per token
+    if (swapResult.outputAmount) {
+      const tokenAmount = swapResult.outputAmount; // REAL token amount from swap
+      const entryPriceSOL = actualBuyAmount / tokenAmount;
 
-        partialExitManager.addPosition(
-          returnedMint,              // Token mint address
-          entryPriceSOL,             // Entry price in SOL per token
-          tokenAmount,               // Amount of tokens bought (REAL VALUE!)
-          actualBuyAmount,           // SOL invested
-          undefined                  // Symbol (optional)
-        );
+      console.log(`✅ Position acquired: ${returnedMint.slice(0,8)}...`);
+      console.log(`   📊 Token Amount: ${tokenAmount.toLocaleString()}`);
+      console.log(`   💰 Entry Price: ${entryPriceSOL.toFixed(10)} SOL per token`);
+      console.log(`   💵 Invested: ${actualBuyAmount} SOL`);
 
-        console.log(`✅ Position added to exit tracking: ${returnedMint.slice(0,8)}...`);
-        console.log(`   📊 Token Amount: ${tokenAmount.toLocaleString()}`);
-        console.log(`   💰 Entry Price: ${entryPriceSOL.toFixed(10)} SOL per token`);
-        console.log(`   💵 Invested: ${actualBuyAmount} SOL`);
-
-        // ✅ VIP2 INTEGRATION: Add position to real-time price monitoring
-        if (globalPositionMonitor) {
-          try {
-            const monitoredPosition: MonitoredPosition = {
-              mint: returnedMint,
-              poolAddress: "", // Derive from token if needed
-              entryPriceSOL: entryPriceSOL,
-              entryPriceUSD: entryPriceSOL * SOL_PRICE,
-              tokenAmount: tokenAmount,
-              entryTime: new Date(),
-              dex: "pumpfun" // Assume pump.fun for now
-            };
-            await globalPositionMonitor.addPosition(monitoredPosition);
-            console.log(`👁️ Position added to real-time monitoring: ${returnedMint.slice(0,8)}...`);
-          } catch (monitorError) {
-            console.warn('⚠️ Failed to add position to monitor:', monitorError);
-          }
-        }
-      } catch (exitError) {
-        console.warn('⚠️ Failed to add position to exit tracking:', exitError);
-      }
+      // Register with both PartialExitManager and PositionMonitor via unified function
+      await registerNewPositionForMonitoring(
+        returnedMint,        // Token mint
+        "",                  // Pool address (derive if needed)
+        "pumpfun",           // DEX source (adjust based on actual source)
+        actualBuyAmount,     // SOL invested
+        tokenAmount          // Tokens received
+      );
     }
 
     // ============================================
@@ -2057,7 +2216,7 @@ if (queueManager) {
       }
     }
   } else {
-    stats.tokensRejected++;
+    incrementStat('tokensRejected');
   }
   
   return;
@@ -2091,11 +2250,11 @@ async function recordSimulatedExit(
 
     // 2) Update high-level stats for the emergency dashboard
     // NOTE: totalTrades already incremented when position was opened (PAPER block)
-    // Only track win/loss outcome here
+    // Only track win/loss outcome here - updates both session and lifetime
     if (profitPercentage > 0) {
-      stats.wins = (stats.wins || 0) + 1;
+      incrementStat('wins');
     } else if (profitPercentage < 0) {
-      stats.losses = (stats.losses || 0) + 1;
+      incrementStat('losses');
     }
 
     console.log(
@@ -2115,16 +2274,22 @@ async function recordSimulatedExit(
 // STATUS REPORTING
 // ============================================
 function printStatus(): void {
-  // Use sessionStartTime for accurate current session runtime
-  const runtime = Math.floor((Date.now() - sessionStartTime.getTime()) / 1000);
-  const hours = Math.floor(runtime / 3600);
-  const minutes = Math.floor((runtime % 3600) / 60);
-  const seconds = runtime % 60;
-  const tokensPerHour = stats.tokensDetected > 0 ? (stats.tokensDetected / (runtime / 3600)).toFixed(1) : "0";
+  // CURRENT SESSION runtime (resets each session)
+  const sessionRuntimeMs = Date.now() - stats.sessionStartTime.getTime();
+  const sessionSeconds = Math.floor(sessionRuntimeMs / 1000);
+  const sessionHours = Math.floor(sessionSeconds / 3600);
+  const sessionMinutes = Math.floor((sessionSeconds % 3600) / 60);
+  const sessionSecs = sessionSeconds % 60;
+  const tokensPerHour = stats.tokensDetected > 0 ? (stats.tokensDetected / (sessionSeconds / 3600)).toFixed(1) : "0";
+
+  // LIFETIME runtime (never resets during bot run)
+  const lifetimeRuntimeMs = Date.now() - stats.lifetimeStartTime.getTime();
+  const lifetimeHours = Math.floor(lifetimeRuntimeMs / 1000 / 3600);
 
   console.clear();
   console.log(`\n${"=".repeat(50)}`);
-  console.log(`📊 CURRENT SESSION STATUS (Runtime: ${hours}h ${minutes}m ${seconds}s)`);
+  console.log(`📊 CURRENT SESSION STATUS (Runtime: ${sessionHours}h ${sessionMinutes}m ${sessionSecs}s)`);
+  console.log(`   (Lifetime: ~${lifetimeHours}h total since bot start)`);
   console.log(`${"=".repeat(50)}`);
   console.log(`🎯 Tokens Detected: ${stats.tokensDetected}`);
   console.log(`✅ Tokens Bought: ${stats.tokensBought}`);
@@ -2142,6 +2307,15 @@ function printStatus(): void {
     console.log(`   Wins: ${stats.wins || 0}`);
     console.log(`   Losses: ${stats.losses || 0}`);
     console.log(`   Win Rate: ${winRate}%`);
+  }
+
+  // LIFETIME STATS (never reset during bot run)
+  if (stats.lifetimeTokensDetected > stats.tokensDetected) {
+    console.log(`\n📊 LIFETIME TOTALS (all sessions):`);
+    console.log(`   Tokens Detected: ${stats.lifetimeTokensDetected}`);
+    console.log(`   Tokens Bought: ${stats.lifetimeTokensBought}`);
+    console.log(`   Tokens Rejected: ${stats.lifetimeTokensRejected}`);
+    console.log(`   Tokens Blocked: ${stats.lifetimeTokensBlocked}`);
   }
 
   // Safety wrapper dashboard
@@ -2255,7 +2429,16 @@ function printStatus(): void {
 
   // Status display
   setInterval(printStatus, 5000);
-  
+
+  // ============================================
+  // LEGACY CLEANUP - Remove broken positions from DB
+  // ============================================
+  // Run once per startup to keep DB clean of legacy/broken positions
+  // This ensures PositionMonitor never sees invalid positions that would
+  // cause gRPC subscription errors
+  console.log('🧹 Running legacy position cleanup...');
+  await cleanupLegacyPositions(logEngine);
+
   // Verify positions
   logEngine.writeLog(`✅ Verifying`, `Checking current wallet token balances...`, "white");
   const positionsVerified = await verifyPositions();
@@ -2264,10 +2447,13 @@ function printStatus(): void {
   console.log('⏳ Rate limiting: 2 second delay added');
 
   // ============================================
-  // INITIALIZE PARTIAL EXIT MANAGER
+  // INITIALIZE EXIT SYSTEM (PartialExitManager + SellExecutor)
   // ============================================
-  console.log('💎 Initializing Partial Exit System...');
-  partialExitManager = new PartialExitManager();
+  console.log('💎 Initializing Exit System...');
+  initializeExitSystem(logEngine);
+
+  // Initialize Position Monitor AFTER Exit System (so callbacks wire correctly)
+  await initializePositionMonitor();
 
   // ============================================
   // PHASE 3A: REAL ROI CALCULATION HELPER
@@ -2351,153 +2537,9 @@ function printStatus(): void {
     }
   }
 
-  // Register callback for when exit tiers trigger
-  partialExitManager.onExit(async (mint, tier, result) => {
-    // PHASE 4C: Enhanced callback logging
-    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`🎯 [EXIT-TIER] Callback invoked for ${mint.slice(0,8)}...`);
-    console.log(`   Tier: ${tier.name}`);
-    console.log(`   Amount to sell: ${result.actualAmountSold.toLocaleString()} tokens`);
-    console.log(`   Mode: ${TEST_MODE ? 'PAPER TRADING' : 'LIVE TRADING'}`);
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-
-    // Check if we're in paper trading mode
-    if (TEST_MODE) {
-      // PAPER TRADING: Simulate the sell AND update pool + stats
-      console.log(`[EXIT] Starting PAPER exit for ${mint.slice(0,8)}...`);
-      console.log(`   Simulated sell: ${result.actualAmountSold.toLocaleString()} tokens (${tier.percentage}%)`);
-      console.log(`   Simulated profit: ${result.profitSOL.toFixed(4)} SOL`);
-      console.log(`   Remaining: ${result.remainingAmount.toLocaleString()} tokens`);
-
-      // Get position data for unified exit handler
-      const position = partialExitManager.getPosition(mint);
-      if (position) {
-        const holdTimeMinutes = (Date.now() - position.entryTime) / 60000;
-        const simulatedExitPrice = position.entryPrice * tier.multiplier; // Simulated price at tier target
-        const roiPercent = ((tier.multiplier - 1) * 100).toFixed(1);
-
-        // Use unified exit handler (PHASE 3C)
-        await handleFinalizedExit(
-          'PAPER',
-          mint,
-          position.entryPrice,        // Entry price
-          simulatedExitPrice,          // Simulated exit price
-          result.actualAmountSold,     // Tokens sold
-          holdTimeMinutes,             // Hold time
-          tier.name,                   // Tier label
-          tier.multiplier              // Tier multiplier (2, 4, 6)
-        ).catch(err => {
-          console.warn('⚠️ [PAPER EXIT] Unified handler failed:', err);
-        });
-
-        // PHASE 4C: Log completion
-        console.log(`[EXIT] Completed PAPER exit, ROI=${roiPercent}%, hold=${holdTimeMinutes.toFixed(1)} min`);
-      }
-
-      return; // Don't execute real sell in paper mode
-    }
-
-    // LIVE TRADING: Execute actual sell via unSwapToken
-    try {
-      // PHASE 4C: Log LIVE exit start
-      console.log(`[EXIT] Starting LIVE exit for ${mint.slice(0,8)}...`);
-      console.log(`   Executing blockchain sell: ${result.actualAmountSold.toLocaleString()} tokens`);
-
-      const sellResult = await unSwapToken(
-        mint,                      // Token mint to sell
-        WSOL_MINT,                 // Selling for SOL
-        result.actualAmountSold,   // Amount of tokens to sell
-        logEngine
-      );
-
-      // ============================================
-      // PHASE 3B: EXIT FAIL-SAFE PROTECTIONS
-      // ============================================
-
-      // CHECK 1: Swap result exists and succeeded
-      if (!sellResult || !sellResult.success) {
-        // PHASE 4C: Enhanced fail-safe logging
-        console.error(`[EXIT] LIVE exit blocked by fail-safe (swap failed)`);
-        console.error(`   Reason: ${sellResult?.error || "Unknown error"}`);
-        console.error(`   ⚠️  Pool and stats NOT updated (fail-safe protection)`);
-        return;
-      }
-
-      // CHECK 2: Output amount validation (SOL received)
-      if (!sellResult.solReceived || sellResult.solReceived <= 0) {
-        // PHASE 4C: Enhanced fail-safe logging
-        console.error(`[EXIT] LIVE exit blocked by fail-safe (no SOL received)`);
-        console.error(`   SOL Received: ${sellResult.solReceived || 0}`);
-        console.error(`   ⚠️  Pool and stats NOT updated (fail-safe protection)`);
-        return;
-      }
-
-      // CHECK 3: Input amount validation (tokens sold)
-      if (!sellResult.tokensSold || sellResult.tokensSold <= 0) {
-        // PHASE 4C: Enhanced fail-safe logging
-        console.error(`[EXIT] LIVE exit blocked by fail-safe (no tokens sold)`);
-        console.error(`   Tokens Sold: ${sellResult.tokensSold || 0}`);
-        console.error(`   ⚠️  Pool and stats NOT updated (fail-safe protection)`);
-        return;
-      }
-
-      console.log(`✅ Partial exit executed successfully`);
-      console.log(`   SOL Received: ${sellResult.solReceived.toFixed(6)}`);
-      console.log(`   Tokens Sold: ${sellResult.tokensSold.toLocaleString()}`);
-
-      // PHASE 3B & 3C: Validate slippage, then use unified exit handler
-      const position = partialExitManager.getPosition(mint);
-      if (position && sellResult.solReceived && sellResult.tokensSold) {
-        const entryPriceSOL = position.entryPrice;
-        const realizedExitPrice = sellResult.solReceived / sellResult.tokensSold;
-
-        // CHECK 4: Slippage tolerance validation (PHASE 3B)
-        const targetExitPrice = entryPriceSOL * tier.multiplier;
-        const slippagePercent = ((realizedExitPrice - targetExitPrice) / targetExitPrice) * 100;
-        const allowedSlippagePercent = 20; // Jupiter's 20% slippage tolerance (2000 bps)
-
-        console.log(`📊 SLIPPAGE CHECK:`);
-        console.log(`   Target Price: ${targetExitPrice.toFixed(10)} SOL/token (${tier.multiplier}x)`);
-        console.log(`   Realized:     ${realizedExitPrice.toFixed(10)} SOL/token`);
-        console.log(`   Slippage:     ${slippagePercent.toFixed(2)}%`);
-
-        if (Math.abs(slippagePercent) > allowedSlippagePercent) {
-          console.error(`⚠️  EXIT SLIPPAGE TOO HIGH for ${mint.slice(0, 8)}...`);
-          console.error(`   Slippage: ${slippagePercent.toFixed(2)}% (limit: ${allowedSlippagePercent}%)`);
-          console.error(`   ⚠️  Pool and stats NOT updated (slippage fail-safe)`);
-          return;
-        }
-
-        console.log(`   ✅ Slippage within tolerance (< ${allowedSlippagePercent}%)`);
-
-        const holdTimeMinutes = (Date.now() - position.entryTime) / 60000;
-
-        // Use unified exit handler (PHASE 3C)
-        await handleFinalizedExit(
-          'LIVE',
-          mint,
-          entryPriceSOL,               // Entry price
-          realizedExitPrice,           // REAL exit price from swap
-          sellResult.tokensSold,       // Actual tokens sold
-          holdTimeMinutes,             // Hold time
-          tier.name,                   // Tier label
-          tier.multiplier              // Tier multiplier (2, 4, 6)
-        ).catch(err => {
-          console.warn('⚠️ [LIVE EXIT] Unified handler failed:', err);
-        });
-
-        // PHASE 4C: Log LIVE exit completion
-        const realROI = ((realizedExitPrice - entryPriceSOL) / entryPriceSOL * 100).toFixed(1);
-        console.log(`[EXIT] Completed LIVE exit, ROI=${realROI}%, hold=${holdTimeMinutes.toFixed(1)} min`);
-      } else {
-        console.warn(`⚠️ [LIVE EXIT] Cannot compute real ROI - missing position or swap data`);
-      }
-    } catch (sellError) {
-      console.error(`❌ Sell execution error:`, sellError);
-    }
-  });
-
-  console.log('✅ Partial Exit System initialized');
+  // NOTE: Exit callback now handled by initializeExitSystem() which uses SellExecutor
+  // The old inline callback has been removed to prevent duplicate processing
+  // See initializeExitSystem() for the new SellExecutor-based exit handling
 
   if (positionsVerified) {
     if (DATA_STREAM_METHOD === "grpc") {
@@ -2657,17 +2699,27 @@ function printStatus(): void {
       console.log('   ✅ Cleanup complete');
 
       // Calculate runtime for current session
-      const runtime = Math.floor((Date.now() - sessionStartTime.getTime()) / 1000);
-      const hours = Math.floor(runtime / 3600);
-      const minutes = Math.floor((runtime % 3600) / 60);
-      const seconds = runtime % 60;
+      const sessionRuntimeSec = Math.floor((Date.now() - stats.sessionStartTime.getTime()) / 1000);
+      const hours = Math.floor(sessionRuntimeSec / 3600);
+      const minutes = Math.floor((sessionRuntimeSec % 3600) / 60);
+      const seconds = sessionRuntimeSec % 60;
 
-      console.log(`\n📊 FINAL SESSION STATISTICS`);
+      // Lifetime runtime
+      const lifetimeRuntimeSec = Math.floor((Date.now() - stats.lifetimeStartTime.getTime()) / 1000);
+      const lifetimeHours = Math.floor(lifetimeRuntimeSec / 3600);
+
+      console.log(`\n📊 FINAL SESSION STATISTICS (Current Session Only)`);
       console.log(`Session Runtime: ${hours}h ${minutes}m ${seconds}s`);
       console.log(`Tokens Detected: ${stats.tokensDetected}`);
       console.log(`Tokens Bought: ${stats.tokensBought}`);
       console.log(`Tokens Rejected: ${stats.tokensRejected}`);
       console.log(`Tokens Blocked: ${stats.tokensBlocked}`);
+
+      // Lifetime totals
+      console.log(`\n📊 LIFETIME TOTALS (All Sessions)`);
+      console.log(`Lifetime Runtime: ~${lifetimeHours}h`);
+      console.log(`Lifetime Tokens Detected: ${stats.lifetimeTokensDetected}`);
+      console.log(`Lifetime Tokens Bought: ${stats.lifetimeTokensBought}`);
       
       // Current session pool status
       if (queueManager) {

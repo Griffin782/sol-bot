@@ -9,6 +9,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { getEffectiveMode, logSafeModeStatus, SafeModeResult } from '../safety/SAFE-MODE-GUARD';
 
 // No more imports from old config files - UNIFIED-CONTROL is now the single source of truth
 
@@ -312,6 +313,9 @@ export const MASTER_SETTINGS = {
   // Current Operating Mode
   currentMode: TradingMode.PAPER,  // ✅ PAPER mode for testing | Change to CONSERVATIVE, LIVE, or PRODUCTION for real trading
 
+  // SAFE MODE: Requires multiple explicit confirmations for LIVE trading
+  allowLiveTrading: false,  // ❌ MUST be true + env vars + CLI flag for LIVE mode
+
   // Pool Management (CONFLICTS RESOLVED)
   pool: {
     initialPool: 60,          // Starting amount $600
@@ -438,6 +442,30 @@ export const MASTER_SETTINGS = {
     wallets: [] as { key: string; name: string; enabled: boolean }[],
   },
 
+  // ============================================
+  // EXPERIMENTAL FLAGS (Position Monitor Patches)
+  // ============================================
+  experimental: {
+    // PATCH 1: Rollback flag - force legacy subscription format
+    // When true, skip ALL new filtering logic (programIds, instruction filters)
+    // and use ONLY accountInclude[] as in the original stable version
+    positionMonitorRollback: false,
+
+    // PATCH 2: Toggle mode for subscription filtering
+    // - "legacy": Use accountInclude-only (same as rollback=true)
+    // - "program": Use programId filters + accountInclude hints
+    // - "auto": Auto-detect on startup (PATCH 3) - test filters, fallback if fail
+    positionMonitorMode: "legacy" as "legacy" | "program" | "auto",
+
+    // === BEGIN: GRPC-MODE TOGGLE ===
+    // PATCH 4: gRPC subscription mode for PositionMonitor
+    // - "transactions": Watch swap TRANSACTIONS that touch bonding curves (DEFAULT, current behavior)
+    // - "accounts": Watch bonding curve ACCOUNT state changes directly (faster, less noise)
+    // NOTE: If positionMonitorRollback=true, grpcMode is ignored and legacy transactions mode is forced.
+    grpcMode: "transactions" as "transactions" | "accounts",
+    // === END: GRPC-MODE TOGGLE ===
+  },
+
   // File Paths
   paths: {
     dataDir: './data',
@@ -455,7 +483,7 @@ export const MASTER_SETTINGS = {
     totalProfit: 0,
     totalLoss: 0,
     winRate: 0,
-    mode: MODE_PRESETS.CONSERVATIVE,   // Start conservative
+    mode: MODE_PRESETS[TradingMode.PAPER],   // Must match currentMode above (PAPER)
     lastConfigUpdate: Date.now(),
     overrideAttempts: 0,
   },
@@ -488,6 +516,34 @@ export class ConfigurationEnforcer {
 
   private constructor() {
     console.log('🔒 ConfigurationEnforcer initialized');
+
+    // Apply SAFE MODE GUARD on startup
+    const initialMode = MASTER_SETTINGS.currentMode;
+    const safeModeResult = getEffectiveMode(
+      initialMode as any,
+      MASTER_SETTINGS.allowLiveTrading
+    );
+
+    // Log safe mode status
+    console.log('✅ [CONFIG-ENFORCER] Startup validation passed');
+    logSafeModeStatus(safeModeResult);
+
+    // Apply effective mode if different from requested
+    if (safeModeResult.effectiveMode !== initialMode) {
+      const effectivePreset = MODE_PRESETS[safeModeResult.effectiveMode as TradingMode];
+      const safePreset = {
+        ...effectivePreset,
+        useRealMoney: safeModeResult.effectiveUseRealMoney,
+        simulation: !safeModeResult.effectiveUseRealMoney,
+      };
+
+      // Force safe values
+      (MASTER_SETTINGS as any).currentMode = safeModeResult.effectiveMode;
+      MASTER_SETTINGS.runtime.mode = safePreset as any;
+
+      console.log(`🔒 [SAFE-MODE] Forced effective mode: ${safeModeResult.effectiveMode}`);
+    }
+
     this.validateStartupConfiguration();
   }
 
@@ -598,7 +654,7 @@ export class ConfigurationEnforcer {
   }
 
   /**
-   * Switch trading mode with validation
+   * Switch trading mode with SAFE MODE validation
    */
   public setTradingMode(mode: TradingMode, requestedBy: string = 'system'): boolean {
     const preset = MODE_PRESETS[mode];
@@ -607,20 +663,41 @@ export class ConfigurationEnforcer {
       return false;
     }
 
-    console.log(`🔄 [CONFIG-ENFORCER] Mode switch: ${MASTER_SETTINGS.currentMode} → ${mode}`);
+    console.log(`🔄 [CONFIG-ENFORCER] Mode switch requested: ${MASTER_SETTINGS.currentMode} → ${mode}`);
     console.log(`   ${preset.description}`);
 
-    // Update mode and related settings
-    this.setValue('currentMode', mode, requestedBy, true);
-    this.setValue('pool.positionSizeSOL', preset.positionSizeSOL, requestedBy, true);
-    this.setValue('pool.positionSizeUSD', preset.positionSizeUSD, requestedBy, true);
-    this.setValue('limits.maxTradesAbsolute', preset.maxTrades, requestedBy, true);
-    this.setValue('runtime.mode', preset, requestedBy, true);
+    // Apply SAFE MODE GUARD - enforce safety checks
+    const safeModeResult = getEffectiveMode(
+      mode as any, // Cast to SafeModeGuard's TradingMode type
+      MASTER_SETTINGS.allowLiveTrading
+    );
 
-    console.log(`✅ [CONFIG-ENFORCER] Mode switched to ${mode}`);
-    console.log(`   Position Size: ${preset.positionSizeUSD} USD (${preset.positionSizeSOL} SOL)`);
-    console.log(`   Max Trades: ${preset.maxTrades}`);
-    console.log(`   Risk Level: ${preset.riskLevel}`);
+    // Log detailed safe mode status
+    logSafeModeStatus(safeModeResult);
+
+    // Use effective mode and useRealMoney after safety checks
+    const effectiveMode = safeModeResult.effectiveMode as TradingMode;
+    const effectivePreset = MODE_PRESETS[effectiveMode];
+
+    // Create a safe preset with effective useRealMoney flag
+    const safePreset = {
+      ...effectivePreset,
+      useRealMoney: safeModeResult.effectiveUseRealMoney,
+      simulation: !safeModeResult.effectiveUseRealMoney,
+    };
+
+    // Update mode and related settings with SAFE values
+    this.setValue('currentMode', effectiveMode, requestedBy, true);
+    this.setValue('pool.positionSizeSOL', safePreset.positionSizeSOL, requestedBy, true);
+    this.setValue('pool.positionSizeUSD', safePreset.positionSizeUSD, requestedBy, true);
+    this.setValue('limits.maxTradesAbsolute', safePreset.maxTrades, requestedBy, true);
+    this.setValue('runtime.mode', safePreset, requestedBy, true);
+
+    console.log(`✅ [CONFIG-ENFORCER] Mode SET to ${effectiveMode} (requested: ${mode})`);
+    console.log(`   Position Size: ${safePreset.positionSizeUSD} USD (${safePreset.positionSizeSOL} SOL)`);
+    console.log(`   Max Trades: ${safePreset.maxTrades}`);
+    console.log(`   Risk Level: ${safePreset.riskLevel}`);
+    console.log(`   Use Real Money: ${safePreset.useRealMoney}`);
 
     return true;
   }

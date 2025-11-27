@@ -25,7 +25,19 @@ import { metadataCache } from "../detection/metadataCache"; // NEW: Metadata cac
 import bs58 from "bs58";
 import util from "util";
 import { validatePubkeys } from "../utils/yellowstoneFilterUtils";
+import { MASTER_SETTINGS } from "../core/UNIFIED-CONTROL";
 
+// ===== Filter Mode Types =====
+type FilterMode = "legacy" | "program";
+
+// ===== Pump.fun Program Filters =====
+// These restrict Yellowstone to only Pump.fun program transactions,
+// while accountInclude keeps narrowing it to only our watched positions.
+
+const PUMP_FUN_PROGRAM_IDS = [
+  // Pump.fun main program (replace with your actual program ID)
+  "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+];
 
 export interface PositionPrice {
   mint: string;
@@ -74,7 +86,7 @@ export class PositionMonitor {
   private healthMonitorCleanupInterval: NodeJS.Timeout | null = null; // Phase 3: Interval for cleaning old token health data
   private grpcClient: Client | null = null;
   private grpcStream: ClientDuplexStream<SubscribeRequest, SubscribeUpdate> | null = null;
-  private priceUpdateCallback: ((mint: string, priceUSD: number) => void) | null = null;
+  private priceUpdateCallback: ((mint: string, priceSOL: number) => void) | null = null;
   private isActive: boolean = false;
 
   // PHASE 2 FIX: Reconnect backoff and circuit breaker
@@ -83,6 +95,19 @@ export class PositionMonitor {
   private sameErrorCount: number = 0;
   private maxReconnectAttempts: number = 10;
 
+  // Fallback API backoff tracking
+  private fallbackErrorCounts: Map<string, number> = new Map(); // mint -> consecutive errors
+  private fallbackCooldownUntil: Map<string, number> = new Map(); // mint -> timestamp when allowed
+
+  // PATCH 1/2/3: Filter mode management
+  private filterMode: FilterMode = "legacy"; // Runtime-determined mode
+  private autoDetectComplete: boolean = false; // Has auto-detect finished?
+
+  // === BEGIN: GRPC-MODE TOGGLE ===
+  // PATCH 4: gRPC subscription mode ("transactions" or "accounts")
+  private grpcMode: "transactions" | "accounts" = "transactions";
+  // === END: GRPC-MODE TOGGLE ===
+
   constructor(
     private grpcEndpoint: string,
     private grpcToken: string,
@@ -90,9 +115,9 @@ export class PositionMonitor {
   ) {}
 
   /**
-   * Set callback for when prices update
+   * Set callback for when prices update (in SOL, not USD)
    */
-  public onPriceUpdate(callback: (mint: string, priceUSD: number) => void): void {
+  public onPriceUpdate(callback: (mint: string, priceSOL: number) => void): void {
     this.priceUpdateCallback = callback;
   }
 
@@ -198,6 +223,22 @@ export class PositionMonitor {
 
     try {
       this.grpcClient = new Client(this.grpcEndpoint, this.grpcToken, { skipPreflight: true });
+
+      // PATCH 3: Run auto-detect BEFORE creating main stream
+      // This tests program filters and determines the mode to use
+      await this.runAutoDetect();
+
+      // === BEGIN: GRPC-MODE TOGGLE ===
+      // PATCH 4: Initialize grpcMode from config (defaults to "transactions")
+      // NOTE: If positionMonitorRollback=true, grpcMode is effectively ignored
+      this.grpcMode = MASTER_SETTINGS.experimental.grpcMode ?? "transactions";
+      console.log(`[PositionMonitor] gRPC subscription mode: ${this.grpcMode}`);
+      console.log(`[PositionMonitor] ${this.grpcMode === "accounts"
+        ? "ACCOUNT-based: watching bonding curve state changes directly"
+        : "TRANSACTION-based: watching swap transactions"}`);
+      // === END: GRPC-MODE TOGGLE ===
+
+      // Now create the main stream with the determined mode
       this.grpcStream = await this.grpcClient.subscribe();
 
       await this.setupSubscription();
@@ -300,8 +341,311 @@ export class PositionMonitor {
     );
   }
 
+  // ============================================
+  // PATCH 1/2/3: Filter Mode Methods
+  // ============================================
+
+  /**
+   * Determine the effective filter mode from config
+   * Priority: rollback flag > mode setting > auto-detect result
+   */
+  private getEffectiveFilterMode(): FilterMode {
+    const config = MASTER_SETTINGS.experimental;
+
+    // PATCH 1: Rollback flag takes highest priority
+    if (config.positionMonitorRollback) {
+      console.log(`[FILTER-MODE] Rollback flag is TRUE — forcing legacy mode`);
+      return "legacy";
+    }
+
+    // PATCH 2: Check explicit mode setting
+    const configMode = config.positionMonitorMode;
+
+    if (configMode === "legacy") {
+      return "legacy";
+    }
+
+    if (configMode === "program") {
+      return "program";
+    }
+
+    // PATCH 3: Auto mode — use whatever was determined during startup
+    if (configMode === "auto") {
+      // If auto-detect hasn't run yet, default to legacy for safety
+      if (!this.autoDetectComplete) {
+        console.log(`[FILTER-MODE] Auto mode but detect not complete — using legacy`);
+        return "legacy";
+      }
+      return this.filterMode;
+    }
+
+    // Default fallback
+    return "legacy";
+  }
+
+  /**
+   * PATCH 1: Build LEGACY subscription request (accountInclude-only)
+   * This is the stable format that works with all Yellowstone versions
+   */
+  private buildLegacySubscribeRequest(
+    bondingCurveKeys: string[],
+    fromSlot: number | null = null
+  ): SubscribeRequest {
+    console.log(`[ROLLBACK] Using legacy subscription format`);
+    console.log(`[FILTER-MODE] Using mode: legacy`);
+
+    const request: SubscribeRequest = {
+      commitment: CommitmentLevel.CONFIRMED,
+      accounts: {},
+      slots: {},
+      transactions: {
+        positionMonitor: {
+          vote: false,
+          failed: false,
+          accountInclude: bondingCurveKeys,
+          accountExclude: [],
+          accountRequired: [],
+        },
+      },
+      transactionsStatus: {},
+      entry: {},
+      blocks: {},
+      blocksMeta: {},
+      accountsDataSlice: [],
+    };
+
+    if (fromSlot !== null) {
+      request.fromSlot = String(fromSlot);
+    }
+
+    console.log("[POSITION-MONITOR] FINAL SubscribeRequest (LEGACY)", util.inspect(request, { depth: 5 }));
+
+    return request;
+  }
+
+  /**
+   * PATCH 2: Build PROGRAM subscription request (with programId filters)
+   * This is the advanced format with program-level filtering
+   */
+  private buildProgramSubscribeRequest(
+    bondingCurveKeys: string[],
+    fromSlot: number | null = null
+  ): SubscribeRequest {
+    console.log(`[FILTER-MODE] Using mode: program`);
+    console.log(`[FILTER-MODE] program mode active`);
+
+    const request: SubscribeRequest = {
+      commitment: CommitmentLevel.CONFIRMED,
+      accounts: {},
+      slots: {},
+      transactions: {
+        positionMonitor: {
+          vote: false,
+          failed: false,
+
+          // Program-level filter
+          programIds: PUMP_FUN_PROGRAM_IDS,
+
+          // Account hints (our watched positions)
+          accountInclude: bondingCurveKeys,
+          accountExclude: [],
+          accountRequired: [],
+        } as any, // programIds not in TS types but valid at runtime
+      },
+      transactionsStatus: {},
+      entry: {},
+      blocks: {},
+      blocksMeta: {},
+      accountsDataSlice: [],
+    };
+
+    if (fromSlot !== null) {
+      request.fromSlot = String(fromSlot);
+    }
+
+    console.log("[POSITION-MONITOR] FINAL SubscribeRequest (PROGRAM)", util.inspect(request, { depth: 5 }));
+
+    return request;
+  }
+
+  // === BEGIN: GRPC-SUBSCRIPTION-MODES ===
+  /**
+   * PATCH 4: Build ACCOUNT-based subscription request
+   * Watches bonding curve account STATE CHANGES directly (not transactions)
+   *
+   * Advantages:
+   * - Faster updates (~400ms per block vs waiting for swap tx)
+   * - Less noise (only account state, not all pump.fun txs)
+   * - Continuous price feed even during low activity
+   *
+   * Data structure mirrors grpc-sniper pattern:
+   * - accounts: { bondingCurves: { account: [...], owner: [programId] } }
+   * - transactions: {} (empty)
+   */
+  private buildAccountSubscribeRequest(
+    bondingCurveKeys: string[],
+    fromSlot: number | null = null
+  ): SubscribeRequest {
+    // Filter out invalid addresses
+    const validAddresses = bondingCurveKeys.filter((addr) => {
+      return !!addr && addr !== "(missing)" && this.isValidSolanaAddress(addr);
+    });
+
+    console.log(`[FILTER-MODE] Using mode: accounts (ACCOUNT-based subscription)`);
+    console.log(`[FILTER-MODE] Watching ${validAddresses.length} bonding curve accounts directly`);
+
+    const request: SubscribeRequest = {
+      commitment: CommitmentLevel.PROCESSED, // PROCESSED for fastest updates
+      accounts: {
+        bondingCurves: {
+          account: validAddresses,           // Specific accounts to watch
+          owner: PUMP_FUN_PROGRAM_IDS,       // Filter by program owner
+          filters: [],                        // No additional memcmp filters needed
+        },
+      },
+      slots: {},
+      transactions: {},                       // EMPTY - not watching transactions in account mode
+      transactionsStatus: {},
+      entry: {},
+      blocks: {},
+      blocksMeta: {},
+      accountsDataSlice: [],
+    };
+
+    if (fromSlot !== null) {
+      request.fromSlot = String(fromSlot);
+    }
+
+    console.log("[POSITION-MONITOR] FINAL SubscribeRequest (ACCOUNTS)", util.inspect(request, { depth: 5 }));
+
+    return request;
+  }
+  // === END: GRPC-SUBSCRIPTION-MODES ===
+
+  /**
+   * PATCH 3: Auto-detect filter support on startup
+   * Tests program filters and falls back to legacy if they fail
+   */
+  private async runAutoDetect(): Promise<void> {
+    const configMode = MASTER_SETTINGS.experimental.positionMonitorMode;
+
+    // Only run for "auto" mode
+    if (configMode !== "auto") {
+      this.filterMode = configMode === "program" ? "program" : "legacy";
+      this.autoDetectComplete = true;
+      console.log(`[AUTO-DETECT] Skipped — mode explicitly set to "${configMode}"`);
+      return;
+    }
+
+    console.log(`[AUTO-DETECT] Testing advanced filters...`);
+
+    try {
+      // Create a temporary test subscription with program filters
+      if (!this.grpcClient) {
+        console.log(`[AUTO-DETECT] No gRPC client — defaulting to legacy`);
+        this.filterMode = "legacy";
+        this.autoDetectComplete = true;
+        return;
+      }
+
+      // Create test stream
+      const testStream = await this.grpcClient.subscribe();
+
+      // Build a minimal test request with program filters
+      const testRequest: SubscribeRequest = {
+        commitment: CommitmentLevel.CONFIRMED,
+        accounts: {},
+        slots: {},
+        transactions: {
+          autoDetectTest: {
+            vote: false,
+            failed: false,
+            programIds: PUMP_FUN_PROGRAM_IDS,
+            accountInclude: [],
+            accountExclude: [],
+            accountRequired: [],
+          } as any,
+        },
+        transactionsStatus: {},
+        entry: {},
+        blocks: {},
+        blocksMeta: {},
+        accountsDataSlice: [],
+      };
+
+      // Set up promise to wait for response or timeout
+      const detectPromise = new Promise<boolean>((resolve) => {
+        let resolved = false;
+
+        // Timeout after 3 seconds
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            console.log(`[AUTO-DETECT] No updates — fallback to legacy`);
+            resolve(false);
+          }
+        }, 3000);
+
+        // Listen for any data (success) or error (failure)
+        testStream.on("data", () => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            console.log(`[AUTO-DETECT] Program filters validated`);
+            resolve(true);
+          }
+        });
+
+        testStream.on("error", (err: Error) => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            const errMsg = err.message || String(err);
+            if (errMsg.includes("INVALID_ARGUMENT") || errMsg.includes("filter")) {
+              console.log(`[AUTO-DETECT] Program filters failed — falling back to legacy`);
+              console.log(`[AUTO-DETECT] Error: ${errMsg}`);
+            } else {
+              console.log(`[AUTO-DETECT] Unexpected error — falling back to legacy`);
+              console.log(`[AUTO-DETECT] Error: ${errMsg}`);
+            }
+            resolve(false);
+          }
+        });
+
+        // Send test subscription
+        testStream.write(testRequest);
+      });
+
+      const programFiltersWork = await detectPromise;
+
+      // Clean up test stream
+      testStream.end();
+
+      // Set the mode based on result
+      if (programFiltersWork) {
+        console.log(`[AUTO-DETECT] Program filters OK, enabling program mode`);
+        this.filterMode = "program";
+      } else {
+        console.log(`[AUTO-DETECT] Program filters failed, falling back to legacy mode`);
+        this.filterMode = "legacy";
+      }
+
+    } catch (error) {
+      console.error(`[AUTO-DETECT] Exception during detection:`, error);
+      console.log(`[AUTO-DETECT] Defaulting to legacy mode for safety`);
+      this.filterMode = "legacy";
+    }
+
+    this.autoDetectComplete = true;
+  }
+
+  // ============================================
+  // END PATCH 1/2/3 Methods
+  // ============================================
+
   /**
    * Build Yellowstone SubscribeRequest with validated pubkeys
+   * PATCH 1/2/3/4: Now uses grpcMode + filter mode builder selection
    */
   private buildPositionMonitorRequest(
     watchedPools: any[],
@@ -318,35 +662,79 @@ export class PositionMonitor {
       "bondingCurve"
     );
 
-    // Flatten into one list of pubkeys
-    const allKeys = [...safePoolKeys, ...safeBondingKeys];
+    // Flatten into one list of pubkeys for accountInclude
+    const allAccounts = [...safePoolKeys, ...safeBondingKeys];
 
-    const request: SubscribeRequest = {
-      commitment: CommitmentLevel.CONFIRMED,
-      accounts: {},
-      slots: {},
-      transactions: {
-        positionMonitor: {
-          vote: false,
-          failed: false,
-          // Yellowstone expects string[] of base58 pubkeys here
-          accountInclude: [],
-          accountExclude: [],
-          accountRequired: allKeys,
-        },
-      },
-      transactionsStatus: {},
-      entry: {},
-      blocks: {},
-      blocksMeta: {},
-      accountsDataSlice: [],
-    };
+    console.log(
+      `[Position Monitor] Building SubscribeRequest with ${safePoolKeys.length} pool keys and ${safeBondingKeys.length} bonding keys`
+    );
+    safePoolKeys.forEach((k, i) =>
+      console.log(`  [POOL ${i}] ${k}`)
+    );
+    safeBondingKeys.forEach((k, i) =>
+      console.log(`  [BONDING ${i}] ${k}`)
+    );
 
-    if (fromSlot !== null) {
-      request.fromSlot = String(fromSlot);
+    // === BEGIN: GRPC-SUBSCRIPTION-MODES ===
+    // PATCH 4: Check grpcMode FIRST - accounts mode uses different builder entirely
+    // NOTE: If positionMonitorRollback=true, getEffectiveFilterMode() forces legacy,
+    //       but we still check grpcMode here. To truly force transactions mode,
+    //       set grpcMode="transactions" OR positionMonitorRollback=true.
+    if (this.grpcMode === "accounts") {
+      console.log(`[GRPC-MODE] Using ACCOUNT-based subscription (watching ${safeBondingKeys.length} bonding curves)`);
+      return this.buildAccountSubscribeRequest(safeBondingKeys, fromSlot);
     }
+    // === END: GRPC-SUBSCRIPTION-MODES ===
 
-    return request;
+    // PATCH 1/2/3: Use mode-based builder for transactions mode
+    const mode = this.getEffectiveFilterMode();
+    console.log(`[FILTER-MODE] Using mode: ${mode}`);
+
+    if (mode === "legacy") {
+      return this.buildLegacySubscribeRequest(allAccounts, fromSlot);
+    } else {
+      return this.buildProgramSubscribeRequest(allAccounts, fromSlot);
+    }
+  }
+
+  /**
+   * Build Yellowstone SubscribeRequest from pre-validated key arrays
+   * Used when pools and bondingCurves have already been cleaned/filtered
+   * PATCH 1/2/3: Now uses mode-based builder selection
+   */
+  private buildPositionMonitorRequestFromKeys(
+    poolKeys: string[],
+    bondingKeys: string[],
+    fromSlot: number | null = null
+  ): SubscribeRequest {
+    // Validate the keys we received
+    const safePoolKeys = validatePubkeys(poolKeys, "pool");
+    const safeBondingKeys = validatePubkeys(bondingKeys, "bondingCurve");
+
+    // Combine into one flat array for accountInclude
+    const allAccounts = [...safePoolKeys, ...safeBondingKeys];
+
+    console.log(
+      `[Position Monitor] Building SubscribeRequest with ${safePoolKeys.length} pool keys and ${safeBondingKeys.length} bonding keys`
+    );
+
+    // === BEGIN: GRPC-SUBSCRIPTION-MODES ===
+    // PATCH 4: Check grpcMode FIRST - accounts mode uses different builder entirely
+    if (this.grpcMode === "accounts") {
+      console.log(`[GRPC-MODE] Using ACCOUNT-based subscription (watching ${safeBondingKeys.length} bonding curves)`);
+      return this.buildAccountSubscribeRequest(safeBondingKeys, fromSlot);
+    }
+    // === END: GRPC-SUBSCRIPTION-MODES ===
+
+    // PATCH 1/2/3: Use mode-based builder (transactions mode)
+    const mode = this.getEffectiveFilterMode();
+    console.log(`[FILTER-MODE] Using mode: ${mode}`);
+
+    if (mode === "legacy") {
+      return this.buildLegacySubscribeRequest(allAccounts, fromSlot);
+    } else {
+      return this.buildProgramSubscribeRequest(allAccounts, fromSlot);
+    }
   }
 
   /**
@@ -387,62 +775,112 @@ export class PositionMonitor {
       return;
     }
 
-    // RUNTIME ASSERTION: Validate all watchedPool entries before building request
-    console.log(`[Position Monitor] ===== VALIDATING WATCHED POOLS =====`);
-    let hasInvalidEntries = false;
-    for (let i = 0; i < watchedPools.length; i++) {
-      const w = watchedPools[i];
-      if (!w.pool || !w.bondingCurve) {
-        console.error(`[Position Monitor] ❌ Invalid watchedPool entry [${i}]:`, {
-          index: i,
-          mint: (w as any).mint,
-          pool: w.pool || '(missing)',
-          bondingCurve: w.bondingCurve || '(missing)',
-        });
-        hasInvalidEntries = true;
-      } else {
-        console.log(`[Position Monitor] ✅ [${i}] mint=${(w as any).mint?.substring(0, 8)}... pool=${w.pool.substring(0, 8)}... bc=${w.bondingCurve.substring(0, 8)}...`);
-      }
-    }
+    // Normalize and validate watchedPools - skip only entries where BOTH are invalid
+    console.log("[Position Monitor] ===== VALIDATING WATCHED POOLS =====");
 
-    if (hasInvalidEntries) {
-      console.error(`[Position Monitor] ❌ Found invalid entries in watchedPools - aborting subscription update`);
+    const cleanedWatchedPools: { pool: string | null; bondingCurve: string | null; mint?: string }[] = [];
+    let invalidCount = 0;
+
+    positions.forEach((pos, index) => {
+      const raw = watchedPools[index];
+
+      let poolAddr: string | null = raw.pool;
+      let bondingAddr: string | null = raw.bondingCurve;
+
+      // Treat empty strings or "(missing)" as absent
+      if (!poolAddr || poolAddr === "(missing)" || poolAddr === "") {
+        poolAddr = null;
+      }
+      if (!bondingAddr || bondingAddr === "(missing)" || bondingAddr === "") {
+        bondingAddr = null;
+      }
+
+      const poolValid = !!poolAddr && this.isValidSolanaAddress(poolAddr);
+      const bondingValid = !!bondingAddr && this.isValidSolanaAddress(bondingAddr);
+
+      if (!poolValid && !bondingValid) {
+        // Completely invalid entry – skip it
+        console.warn(
+          `[Position Monitor] ❌ Invalid watchedPool entry [${index}]:`,
+          {
+            index,
+            mint: pos.mint,
+            pool: raw.pool,
+            bondingCurve: raw.bondingCurve,
+          }
+        );
+        invalidCount++;
+        return;
+      }
+
+      if (!poolValid && bondingValid) {
+        console.log(
+          `[Position Monitor] ⚠️ Missing/invalid pool for ${pos.mint?.slice(0, 8)}..., using bondingCurve only`
+        );
+      }
+
+      cleanedWatchedPools.push({
+        pool: poolValid ? poolAddr! : null,
+        bondingCurve: bondingValid ? bondingAddr! : null,
+        mint: pos.mint,
+      });
+    });
+
+    // If everything was invalid, log and bail out gracefully
+    if (cleanedWatchedPools.length === 0) {
+      console.warn(
+        "[Position Monitor] No valid pools/bondingCurves found – skipping subscription update"
+      );
       return;
     }
-    console.log(`[Position Monitor] ===== ALL ENTRIES VALID =====`);
 
-    // Build validated subscription request using utility function
-    // This will validate all pubkeys and throw if any are invalid
+    console.log(
+      `[Position Monitor] Using ${cleanedWatchedPools.length} valid watchedPools (${invalidCount} skipped)`
+    );
+    cleanedWatchedPools.forEach((wp, i) => {
+      console.log(
+        `  [${i}] mint=${wp.mint?.slice(0, 8) ?? "?"} pool=${wp.pool?.slice(0, 8) ?? "(none)"}, bondingCurve=${
+          wp.bondingCurve?.slice(0, 8) ?? "(none)"
+        }`
+      );
+    });
+    console.log("[Position Monitor] ===========================================");
+
+    // Extract valid pubkeys for subscription (filter out nulls)
+    const poolKeyStrings = cleanedWatchedPools
+      .map(w => w.pool)
+      .filter((p): p is string => !!p);
+
+    const bondingKeyStrings = cleanedWatchedPools
+      .map(w => w.bondingCurve)
+      .filter((b): b is string => !!b);
+
+    // Build validated subscription request
     let request: SubscribeRequest;
     try {
-      request = this.buildPositionMonitorRequest(watchedPools);
-      console.log(`[Position Monitor] ✅ Successfully built subscription request with validated pubkeys`);
+      request = this.buildPositionMonitorRequestFromKeys(poolKeyStrings, bondingKeyStrings);
+      console.log(`[Position Monitor] ✅ Built subscription with ${poolKeyStrings.length} pools + ${bondingKeyStrings.length} bondingCurves`);
     } catch (error) {
       console.error(`[Position Monitor] ❌ Failed to build subscription request:`, error);
-      console.error(`[Position Monitor] Watched pools data:`, JSON.stringify(watchedPools, null, 2));
       return;
     }
 
     // CRITICAL: Log the EXACT request that will be sent to Yellowstone
     console.log(`[POSITION-MONITOR] FINAL SubscribeRequest (LIVE - updateSubscription):\n${util.inspect(request, { depth: 10, colors: false })}`);
 
-    // VERIFY: Check that accountRequired contains the expected number of pubkeys
-    const accountRequired = request.transactions?.positionMonitor?.accountRequired;
-    const expectedCount = watchedPools.length * 2; // pool + bondingCurve per position
-    if (accountRequired && Array.isArray(accountRequired)) {
-      console.log(`[Position Monitor] 🔍 Verification: accountRequired has ${accountRequired.length} pubkeys (expected ${expectedCount})`);
-      if (accountRequired.length !== expectedCount) {
-        console.warn(`[Position Monitor] ⚠️  WARNING: Pubkey count mismatch! Expected ${expectedCount}, got ${accountRequired.length}`);
-      }
+    // VERIFY: Check that accountInclude contains pubkeys
+    const accountInclude = request.transactions?.positionMonitor?.accountInclude;
+    const expectedCount = poolKeyStrings.length + bondingKeyStrings.length;
+    if (accountInclude && Array.isArray(accountInclude)) {
+      console.log(`[Position Monitor] 🔍 Verification: accountInclude has ${accountInclude.length} pubkeys (expected ${expectedCount})`);
     } else {
-      console.error(`[Position Monitor] ❌ CRITICAL: accountRequired is not an array or is missing!`);
+      console.error(`[Position Monitor] ❌ CRITICAL: accountInclude is not an array or is missing!`);
       return;
     }
 
     // Send updated subscription (reuses existing connection)
-    // IMPORTANT: Sending the SAME request object with NO mutations
     this.grpcStream.write(request);
-    console.log(`[Position Monitor] ✅ Updated subscription: ${watchedPools.length} positions monitored`);
+    console.log(`[Position Monitor] ✅ Updated subscription: ${cleanedWatchedPools.length} positions monitored`);
   }
 
   /**
@@ -509,62 +947,112 @@ export class PositionMonitor {
       return;
     }
 
-    // RUNTIME ASSERTION: Validate all watchedPool entries before building request
-    console.log(`[Position Monitor] ===== VALIDATING WATCHED POOLS (SETUP) =====`);
-    let hasInvalidEntries = false;
-    for (let i = 0; i < watchedPools.length; i++) {
-      const w = watchedPools[i];
-      if (!w.pool || !w.bondingCurve) {
-        console.error(`[Position Monitor] ❌ Invalid watchedPool entry [${i}]:`, {
-          index: i,
-          mint: (w as any).mint,
-          pool: w.pool || '(missing)',
-          bondingCurve: w.bondingCurve || '(missing)',
-        });
-        hasInvalidEntries = true;
-      } else {
-        console.log(`[Position Monitor] ✅ [${i}] mint=${(w as any).mint?.substring(0, 8)}... pool=${w.pool.substring(0, 8)}... bc=${w.bondingCurve.substring(0, 8)}...`);
-      }
-    }
+    // Normalize and validate watchedPools - skip only entries where BOTH are invalid
+    console.log("[Position Monitor] ===== VALIDATING WATCHED POOLS (SETUP) =====");
 
-    if (hasInvalidEntries) {
-      console.error(`[Position Monitor] ❌ Found invalid entries in watchedPools - aborting subscription setup`);
+    const cleanedWatchedPools: { pool: string | null; bondingCurve: string | null; mint?: string }[] = [];
+    let invalidCount = 0;
+
+    positions.forEach((pos, index) => {
+      const raw = watchedPools[index];
+
+      let poolAddr: string | null = raw.pool;
+      let bondingAddr: string | null = raw.bondingCurve;
+
+      // Treat empty strings or "(missing)" as absent
+      if (!poolAddr || poolAddr === "(missing)" || poolAddr === "") {
+        poolAddr = null;
+      }
+      if (!bondingAddr || bondingAddr === "(missing)" || bondingAddr === "") {
+        bondingAddr = null;
+      }
+
+      const poolValid = !!poolAddr && this.isValidSolanaAddress(poolAddr);
+      const bondingValid = !!bondingAddr && this.isValidSolanaAddress(bondingAddr);
+
+      if (!poolValid && !bondingValid) {
+        // Completely invalid entry – skip it
+        console.warn(
+          `[Position Monitor] ❌ Invalid watchedPool entry [${index}]:`,
+          {
+            index,
+            mint: pos.mint,
+            pool: raw.pool,
+            bondingCurve: raw.bondingCurve,
+          }
+        );
+        invalidCount++;
+        return;
+      }
+
+      if (!poolValid && bondingValid) {
+        console.log(
+          `[Position Monitor] ⚠️ Missing/invalid pool for ${pos.mint?.slice(0, 8)}..., using bondingCurve only`
+        );
+      }
+
+      cleanedWatchedPools.push({
+        pool: poolValid ? poolAddr! : null,
+        bondingCurve: bondingValid ? bondingAddr! : null,
+        mint: pos.mint,
+      });
+    });
+
+    // If everything was invalid, log and bail out gracefully
+    if (cleanedWatchedPools.length === 0) {
+      console.warn(
+        "[Position Monitor] No valid pools/bondingCurves found – skipping subscription setup"
+      );
       return;
     }
-    console.log(`[Position Monitor] ===== ALL ENTRIES VALID =====`);
 
-    // Build validated subscription request using utility function
-    // This will validate all pubkeys and throw if any are invalid
+    console.log(
+      `[Position Monitor] Using ${cleanedWatchedPools.length} valid watchedPools (${invalidCount} skipped)`
+    );
+    cleanedWatchedPools.forEach((wp, i) => {
+      console.log(
+        `  [${i}] mint=${wp.mint?.slice(0, 8) ?? "?"} pool=${wp.pool?.slice(0, 8) ?? "(none)"}, bondingCurve=${
+          wp.bondingCurve?.slice(0, 8) ?? "(none)"
+        }`
+      );
+    });
+    console.log("[Position Monitor] ===========================================");
+
+    // Extract valid pubkeys for subscription (filter out nulls)
+    const poolKeyStrings = cleanedWatchedPools
+      .map(w => w.pool)
+      .filter((p): p is string => !!p);
+
+    const bondingKeyStrings = cleanedWatchedPools
+      .map(w => w.bondingCurve)
+      .filter((b): b is string => !!b);
+
+    // Build validated subscription request
     let request: SubscribeRequest;
     try {
-      request = this.buildPositionMonitorRequest(watchedPools);
-      console.log(`[Position Monitor] ✅ Successfully built subscription request with validated pubkeys`);
+      request = this.buildPositionMonitorRequestFromKeys(poolKeyStrings, bondingKeyStrings);
+      console.log(`[Position Monitor] ✅ Built subscription with ${poolKeyStrings.length} pools + ${bondingKeyStrings.length} bondingCurves`);
     } catch (error) {
       console.error(`[Position Monitor] ❌ Failed to build subscription request:`, error);
-      console.error(`[Position Monitor] Watched pools data:`, JSON.stringify(watchedPools, null, 2));
       return;
     }
 
     // CRITICAL: Log the EXACT request that will be sent to Yellowstone
     console.log(`[POSITION-MONITOR] FINAL SubscribeRequest (LIVE - setupSubscription):\n${util.inspect(request, { depth: 10, colors: false })}`);
 
-    // VERIFY: Check that accountRequired contains the expected number of pubkeys
-    const accountRequired = request.transactions?.positionMonitor?.accountRequired;
-    const expectedCount = watchedPools.length * 2; // pool + bondingCurve per position
-    if (accountRequired && Array.isArray(accountRequired)) {
-      console.log(`[Position Monitor] 🔍 Verification: accountRequired has ${accountRequired.length} pubkeys (expected ${expectedCount})`);
-      if (accountRequired.length !== expectedCount) {
-        console.warn(`[Position Monitor] ⚠️  WARNING: Pubkey count mismatch! Expected ${expectedCount}, got ${accountRequired.length}`);
-      }
+    // VERIFY: Check that accountInclude contains pubkeys
+    const accountInclude = request.transactions?.positionMonitor?.accountInclude;
+    const expectedCount = poolKeyStrings.length + bondingKeyStrings.length;
+    if (accountInclude && Array.isArray(accountInclude)) {
+      console.log(`[Position Monitor] 🔍 Verification: accountInclude has ${accountInclude.length} pubkeys (expected ${expectedCount})`);
     } else {
-      console.error(`[Position Monitor] ❌ CRITICAL: accountRequired is not an array or is missing!`);
+      console.error(`[Position Monitor] ❌ CRITICAL: accountInclude is not an array or is missing!`);
       return;
     }
 
     // Send subscription
-    // IMPORTANT: Sending the SAME request object with NO mutations
     this.grpcStream.write(request);
-    console.log(`[Position Monitor] ✅ Subscribed to ${watchedPools.length} positions`);
+    console.log(`[Position Monitor] ✅ Subscribed to ${cleanedWatchedPools.length} positions`);
   }
 
   /**
@@ -630,8 +1118,36 @@ export class PositionMonitor {
    * - Priority: Transaction updates take precedence if received within 1 second
    */
   private handleGrpcUpdate(data: SubscribeUpdate): void {
+    // === BEGIN: YELLOWSTONE DEBUG LOGGING ===
+    console.log(
+      `[POSITION-MONITOR] Yellowstone update: ` +
+      `tx=${!!data.transaction} account=${!!data.account} ` +
+      `(grpcMode=${this.grpcMode})`
+    );
+    // === END: YELLOWSTONE DEBUG LOGGING ===
+
+    // === BEGIN: GRPC-SUBSCRIPTION-MODES ===
+    // PATCH 4: gRPC mode determines what updates we receive:
+    // - "transactions" mode: We subscribe to swap transactions + account includes
+    //   → data.transaction contains swap txns, data.account contains included accounts
+    // - "accounts" mode: We subscribe ONLY to bonding curve accounts
+    //   → data.transaction will be undefined (not subscribed), data.account contains BC state changes
+    // The existing handlers below work correctly for both modes since the subscription
+    // itself determines what updates we receive.
+    // === END: GRPC-SUBSCRIPTION-MODES ===
+
     // Process transaction updates (swap transactions)
     if (data.transaction) {
+      // === BEGIN: YELLOWSTONE DEBUG LOGGING ===
+      const debugSig = (data.transaction as any)?.transaction?.signature;
+      const debugSigStr = debugSig
+        ? (typeof debugSig === 'string' ? debugSig : Buffer.from(debugSig).toString('base64').slice(0, 20) + '...')
+        : 'no-sig';
+      console.log(
+        `[POSITION-MONITOR] Processing txn for position monitor: ${debugSigStr}`
+      );
+      // === END: YELLOWSTONE DEBUG LOGGING ===
+
       const tx = data.transaction as SubscribeUpdateTransaction;
       const transaction = tx.transaction?.transaction as any;
       const meta = transaction?.meta;
@@ -664,9 +1180,26 @@ export class PositionMonitor {
               tokenHealthMonitor.recordSwap(priceUpdate.mint, priceUpdate.volumeUSD);
             }
 
-            // Trigger callback with new price
+            // Trigger callback with new price (transaction source)
             if (this.priceUpdateCallback) {
-              this.priceUpdateCallback(priceUpdate.mint, priceUpdate.currentPriceUSD);
+              try {
+                console.log(
+                  `[PRICE-SOURCE] TX ${priceUpdate.mint.slice(0, 8)}... ` +
+                  `priceSOL=${priceUpdate.currentPriceSOL.toExponential(6)} ` +
+                  `priceUSD=${priceUpdate.currentPriceUSD.toFixed(8)}`
+                );
+
+                this.priceUpdateCallback(priceUpdate.mint, priceUpdate.currentPriceSOL);
+
+                console.log(
+                  `[PRICE-FLOW] TX → callback OK for ${priceUpdate.mint.slice(0, 8)}...`
+                );
+              } catch (err) {
+                console.error(
+                  `[PRICE-FLOW] TX → callback ERROR for ${priceUpdate.mint.slice(0, 8)}...:`,
+                  err
+                );
+              }
             }
           }
         }
@@ -766,9 +1299,26 @@ export class PositionMonitor {
             (this as any)[lastLogKey] = now.getTime();
           }
 
-          // Trigger callback with new price
+          // Trigger callback with new price (bonding-curve source)
           if (this.priceUpdateCallback) {
-            this.priceUpdateCallback(targetMint, priceUSD);
+            try {
+              console.log(
+                `[PRICE-SOURCE] BC ${targetMint.slice(0, 8)}... ` +
+                `priceSOL=${priceSOL.toExponential(6)} ` +
+                `priceUSD=${priceUSD.toFixed(8)}`
+              );
+
+              this.priceUpdateCallback(targetMint, priceSOL);
+
+              console.log(
+                `[PRICE-FLOW] BC → callback OK for ${targetMint.slice(0, 8)}...`
+              );
+            } catch (err) {
+              console.error(
+                `[PRICE-FLOW] BC → callback ERROR for ${targetMint.slice(0, 8)}...:`,
+                err
+              );
+            }
           }
 
           // CRITICAL FIX: Send price to lifecycle integration for tracking
@@ -932,6 +1482,38 @@ export class PositionMonitor {
   }
 
   /**
+   * Check whether fallback API is allowed for this mint right now.
+   * Returns true if allowed, false if still cooling down.
+   */
+  private canUseFallback(mint: string): boolean {
+    const now = Date.now();
+    const until = this.fallbackCooldownUntil.get(mint) || 0;
+    return now >= until;
+  }
+
+  /**
+   * Record a fallback API failure and update cooldown.
+   * Uses exponential backoff: 2^errors * 30s
+   */
+  private registerFallbackFailure(mint: string): void {
+    const prevErrors = this.fallbackErrorCounts.get(mint) || 0;
+    const errors = prevErrors + 1;
+    this.fallbackErrorCounts.set(mint, errors);
+
+    const cooldownMs = Math.pow(2, errors) * 30000; // 30s * 2^errors
+    const nextAllowed = Date.now() + cooldownMs;
+
+    this.fallbackCooldownUntil.set(mint, nextAllowed);
+
+    console.log(
+      `[Fallback-Backoff] ${mint.slice(0, 8)}... failed fallback ${errors}x, ` +
+        `cooldown ${Math.round(cooldownMs / 1000)}s (until ${new Date(
+          nextAllowed
+        ).toLocaleTimeString()})`
+    );
+  }
+
+  /**
    * Check for stale positions and fetch prices from API (Layer 3: Fallback Polling)
    * Called every 10 seconds by fallback polling interval
    * Identifies positions with no updates for 10+ seconds and fetches fresh prices
@@ -964,40 +1546,67 @@ export class PositionMonitor {
           continue;
         }
 
-        // Fetch price from API
-        const priceUSD = await this.fetchPriceFromAPI(mint);
-
-        if (priceUSD !== null) {
-          // Update price cache
-          const existing = this.currentPrices.get(mint);
-          if (existing) {
-            const priceSOL = priceUSD / this.solPriceUSD;
-
-            this.currentPrices.set(mint, {
-              ...existing,
-              currentPriceSOL: priceSOL,
-              currentPriceUSD: priceUSD,
-              lastUpdateTime: new Date(),
-              lastUpdateSignature: "api-fallback", // Mark as API fallback
-            });
-
-            // Update last update time to prevent immediate re-fetch
-            this.lastUpdateTimes.set(mint, Date.now());
-
-            // Trigger callback with new price
-            if (this.priceUpdateCallback) {
-              this.priceUpdateCallback(mint, priceUSD);
-            }
-
-            console.log(`[Position Monitor] Updated stale position ${mint} from API: $${priceUSD.toFixed(8)}`);
+        // -----------------------------------------------
+        // FALLBACK PRICE with BACKOFF
+        // -----------------------------------------------
+        try {
+          // Skip fallback if in cooldown
+          if (!this.canUseFallback(mint)) {
+            // Quiet skip (still stale, but we're backing off)
+            continue;
           }
-        } else {
-          // API fetch failed - use last known price (no action needed, already cached)
-          console.warn(`[Position Monitor] Could not fetch fallback price for ${mint}, using last known price`);
+
+          // Attempt fallback price
+          const priceUSD = await this.fetchPriceFromAPI(mint);
+
+          if (priceUSD !== null) {
+            // Success — reset error count and cooldown
+            this.fallbackErrorCounts.set(mint, 0);
+            this.fallbackCooldownUntil.set(mint, 0);
+
+            // Update price cache
+            const existing = this.currentPrices.get(mint);
+            if (existing) {
+              const priceSOL = priceUSD / this.solPriceUSD;
+
+              this.currentPrices.set(mint, {
+                ...existing,
+                currentPriceSOL: priceSOL,
+                currentPriceUSD: priceUSD,
+                lastUpdateTime: new Date(),
+                lastUpdateSignature: "api-fallback", // Mark as API fallback
+              });
+
+              // Also update lastUpdateTimes for stale tracking
+              this.lastUpdateTimes.set(mint, Date.now());
+
+              // Trigger callback with new price (SOL, not USD)
+              if (this.priceUpdateCallback) {
+                this.priceUpdateCallback(mint, priceSOL);
+              }
+
+              console.log(
+                `[Position Monitor] Updated stale position ${mint.slice(0, 8)}... from API: ${priceSOL.toExponential(6)} SOL ($${priceUSD.toFixed(8)})`
+              );
+            }
+          } else {
+            // API returned null — treat as failure for backoff purposes
+            this.registerFallbackFailure(mint);
+            console.warn(
+              `[Position Monitor] Could not fetch fallback price for ${mint.slice(0, 8)}..., using last known price`
+            );
+          }
+        } catch (error) {
+          // Network / API error — record failure and backoff
+          this.registerFallbackFailure(mint);
+          console.error(
+            `[Position Monitor] Fallback error for ${mint.slice(0, 8)}...:`,
+            error
+          );
         }
 
         // Rate limit: Wait 200ms between API requests (max 5/second)
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
     } catch (error) {
