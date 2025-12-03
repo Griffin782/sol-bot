@@ -23,5 +23,30 @@ export function assertValidPubkey(key: string, label: string): string {
 }
 
 export function validatePubkeys(keys: string[], labelPrefix: string): string[] {
-  return keys.map((k, i) => assertValidPubkey(k, `${labelPrefix}[${i}]`));
+  const validKeys: string[] = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+
+    // Skip empty, null, undefined, or placeholder values
+    if (!k || k.trim() === "" || k === "(missing)") {
+      console.warn(
+        `[YELLOWSTONE-FILTER] ${labelPrefix}[${i}] is empty or placeholder, skipping.`
+      );
+      continue;
+    }
+
+    // Try to validate, skip on failure instead of throwing
+    try {
+      const validated = assertValidPubkey(k, `${labelPrefix}[${i}]`);
+      validKeys.push(validated);
+    } catch (e) {
+      console.warn(
+        `[YELLOWSTONE-FILTER] ${labelPrefix}[${i}] is invalid, skipping: ${(e as Error).message}`
+      );
+      // Do not throw - just skip this key
+    }
+  }
+
+  return validKeys;
 }
