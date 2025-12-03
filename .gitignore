@@ -29,11 +29,13 @@ build/
 *.sqlite
 *.sqlite3
 
-# Logs
+# Logs - prevent large logs from ever committing
 *.log
 systemlog.txt
 logs/
+logs/*.txt
 *.log.*
+complete-bot-log.txt
 
 # IDE and Editor files
 .vscode/
@@ -66,4 +68,7 @@ monitored-wallets/*.csv
 # Exclude Windows nul files
 nul
 **/nul
-complete-bot-log.txt
+
+# Large zip archives
+*.csv.zip
+data/*.zip
