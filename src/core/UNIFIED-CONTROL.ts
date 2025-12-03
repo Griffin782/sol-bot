@@ -446,24 +446,21 @@ export const MASTER_SETTINGS = {
   // EXPERIMENTAL FLAGS (Position Monitor Patches)
   // ============================================
   experimental: {
-    // PATCH 1: Rollback flag - force legacy subscription format
-    // When true, skip ALL new filtering logic (programIds, instruction filters)
-    // and use ONLY accountInclude[] as in the original stable version
-    positionMonitorRollback: false,
+    // When true → use legacy PositionMonitor behavior only (current baseline)
+    // This is the SAFE DEFAULT - preserves the 11.21 rollback behavior
+    positionMonitorRollback: true,
 
-    // PATCH 2: Toggle mode for subscription filtering
-    // - "legacy": Use accountInclude-only (same as rollback=true)
-    // - "program": Use programId filters + accountInclude hints
-    // - "auto": Auto-detect on startup (PATCH 3) - test filters, fallback if fail
+    // Placeholder for future patches: "legacy" | "program" | "auto"
+    // - "legacy": Use accountInclude-only (current behavior)
+    // - "program": Use programId filters + accountInclude hints (future)
+    // - "auto": Auto-detect on startup (future)
     positionMonitorMode: "legacy" as "legacy" | "program" | "auto",
 
-    // === BEGIN: GRPC-MODE TOGGLE ===
-    // PATCH 4: gRPC subscription mode for PositionMonitor
-    // - "transactions": Watch swap TRANSACTIONS that touch bonding curves (DEFAULT, current behavior)
-    // - "accounts": Watch bonding curve ACCOUNT state changes directly (faster, less noise)
-    // NOTE: If positionMonitorRollback=true, grpcMode is ignored and legacy transactions mode is forced.
+    // Placeholder for future patches: "transactions" | "accounts"
+    // - "transactions": Watch swap transactions (current behavior)
+    // - "accounts": Watch bonding curve account state changes (future)
+    // NOTE: In Patch 1, this does NOT change any runtime behavior yet.
     grpcMode: "transactions" as "transactions" | "accounts",
-    // === END: GRPC-MODE TOGGLE ===
   },
 
   // File Paths
